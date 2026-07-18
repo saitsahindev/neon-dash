@@ -6,6 +6,7 @@ const mainMenu = document.getElementById('mainMenu');
 const charMenu = document.getElementById('charMenu');
 const pauseMenu = document.getElementById('pauseMenu');
 const startBtn = document.getElementById('startBtn');
+const speedModeBtn = document.getElementById('speedModeBtn');
 const resumeBtn = document.getElementById('resumeBtn');
 const hardModeBtn = document.getElementById('hardModeBtn');
 const charSelectBtn = document.getElementById('charSelectBtn');
@@ -24,6 +25,7 @@ const player = {
 };
 
 const obstacles = [];
+const topObstacles = [];
 const particles = [];
 const initialGameSpeed = 5;
 const baseSpawnInterval = 2000;
@@ -33,6 +35,8 @@ let gameState = 'START';
 let score = 0;
 let highScore = Number.parseInt(localStorage.getItem('highScore') || '0', 10) || 0;
 let gameSpeed = initialGameSpeed;
+let isSpeedMode = false;
+let speedModeColor = '#00aaff';
 let spawnInterval = baseSpawnInterval;
 let spawnTimer = 0;
 let scoreTimer = 0;
@@ -65,6 +69,15 @@ function playJumpSound() {
   oscillator.connect(gain).connect(audioContext.destination);
   oscillator.start(now);
   oscillator.stop(now + 0.1);
+}
+
+function getEffectiveGameSpeed() {
+  return gameSpeed * (isSpeedMode ? 2 : 1);
+}
+
+function setSpeedMode(active) {
+  isSpeedMode = active;
+  speedModeColor = Math.random() < 0.5 ? '#ff0055' : '#00aaff';
 }
 
 function playGameOverSound() {
@@ -118,6 +131,7 @@ function startGame() {
   gameState = 'RUNNING';
   score = 0;
   obstacles.length = 0;
+  topObstacles.length = 0;
   gameSpeed = initialGameSpeed;
   difficultyMultiplier = 1;
   spawnInterval = baseSpawnInterval;
@@ -175,7 +189,7 @@ function drawPlayer() {
 function drawCyberGrid() {
   const gridSize = 50;
   if (gameState === 'RUNNING') {
-    gridOffset = (gridOffset + gameSpeed) % gridSize;
+    gridOffset = (gridOffset + getEffectiveGameSpeed()) % gridSize;
   }
 
   context.save();
@@ -270,10 +284,32 @@ function createSingleObstacle(x = viewportWidth) {
 function createObstacle() {
   const firstObstacle = createSingleObstacle();
 
+  if (Math.random() < 0.35) {
+    createTopObstacle();
+  }
+
   if (gameMode === 'HARD' && Math.random() < 0.4) {
     const doubleGap = 40;
     createSingleObstacle(viewportWidth + firstObstacle.width + doubleGap);
   }
+}
+
+function getCeilingHeight() {
+  if (score >= 1000) return 135;
+  if (score >= 500) return 90;
+  if (score >= 100) return 48;
+  return 8;
+}
+
+function createTopObstacle() {
+  topObstacles.push({
+    x: viewportWidth,
+    y: 0,
+    width: 54,
+    extraHeight: 46 + Math.random() * 42,
+    height: 0,
+    color: '#ff0055',
+  });
 }
 
 function spawnTrollObstacle() {
@@ -300,14 +336,14 @@ function hasEnoughObstacleSpacing() {
   const lastObstacle = obstacles[obstacles.length - 1];
   if (!lastObstacle) return true;
 
-  const minimumDistance = Math.max(180, gameSpeed * 45) + lastObstacle.width;
+  const minimumDistance = Math.max(180, getEffectiveGameSpeed() * 45) + lastObstacle.width;
   return lastObstacle.x + lastObstacle.width <= viewportWidth - minimumDistance;
 }
 
 function updateObstacles() {
   for (let index = obstacles.length - 1; index >= 0; index -= 1) {
     const obstacle = obstacles[index];
-    obstacle.x -= gameSpeed;
+    obstacle.x -= getEffectiveGameSpeed();
 
     if (obstacle.type === 'TROLL' && obstacle.y > obstacle.targetY) {
       obstacle.y = Math.max(obstacle.targetY, obstacle.y - obstacle.riseSpeed);
@@ -323,6 +359,20 @@ function updateObstacles() {
 
     if (obstacle.x + obstacle.width < 0) {
       obstacles.splice(index, 1);
+    }
+  }
+}
+
+function updateTopObstacles() {
+  const ceilingHeight = getCeilingHeight();
+
+  for (let index = topObstacles.length - 1; index >= 0; index -= 1) {
+    const obstacle = topObstacles[index];
+    obstacle.x -= getEffectiveGameSpeed();
+    obstacle.height = ceilingHeight + obstacle.extraHeight;
+
+    if (obstacle.x + obstacle.width < 0) {
+      topObstacles.splice(index, 1);
     }
   }
 }
@@ -381,9 +431,10 @@ function drawParticles() {
 function drawObstacles() {
   obstacles.forEach((obstacle) => {
     context.save();
-    context.fillStyle = obstacle.color;
-    context.strokeStyle = obstacle.color;
-    context.shadowColor = obstacle.color;
+    const renderColor = isSpeedMode ? speedModeColor : obstacle.color;
+    context.fillStyle = renderColor;
+    context.strokeStyle = renderColor;
+    context.shadowColor = renderColor;
     context.shadowBlur = 18;
     context.lineWidth = 3;
 
@@ -416,8 +467,8 @@ function drawObstacles() {
       context.fillRect(centerX - 17, centerY - 10, 9, 8);
       context.fillRect(centerX + 8, centerY - 10, 9, 8);
       context.fillRect(centerX - 14, centerY + 13, 28, 5);
-      context.strokeStyle = obstacle.color;
-      context.shadowColor = obstacle.color;
+      context.strokeStyle = renderColor;
+      context.shadowColor = renderColor;
       context.shadowBlur = 18;
       for (let leg = 0; leg < 4; leg += 1) {
         context.beginPath();
@@ -427,7 +478,7 @@ function drawObstacles() {
       }
       context.font = 'bold 10px Arial, sans-serif';
       context.textAlign = 'center';
-      context.fillStyle = obstacle.color;
+      context.fillStyle = renderColor;
       context.fillText('YouTube', centerX, obstacle.y - 8);
     } else if (obstacle.type === 'TROLL') {
       context.fillRect(obstacle.x, obstacle.y + 18, obstacle.width, obstacle.height - 18);
@@ -439,8 +490,8 @@ function drawObstacles() {
       context.fillRect(obstacle.x + 14, obstacle.y + 17, 9, 7);
       context.fillRect(obstacle.x + 35, obstacle.y + 17, 9, 7);
       context.fillRect(obstacle.x + 16, obstacle.y + 35, 28, 5);
-      context.fillStyle = obstacle.color;
-      context.shadowColor = obstacle.color;
+      context.fillStyle = renderColor;
+      context.shadowColor = renderColor;
       context.shadowBlur = 18;
       context.font = 'bold 10px monospace';
       context.textAlign = 'center';
@@ -471,10 +522,41 @@ function drawObstacles() {
   });
 }
 
+function drawTopObstacles() {
+  const ceilingHeight = getCeilingHeight();
+  const laserColor = isSpeedMode ? speedModeColor : '#ff0055';
+
+  context.save();
+  context.strokeStyle = laserColor;
+  context.shadowColor = laserColor;
+  context.shadowBlur = 16;
+  context.lineWidth = 3;
+  context.beginPath();
+  context.moveTo(0, ceilingHeight);
+  context.lineTo(viewportWidth, ceilingHeight);
+  context.stroke();
+
+  topObstacles.forEach((obstacle) => {
+    const color = isSpeedMode ? speedModeColor : obstacle.color;
+    context.fillStyle = color;
+    context.shadowColor = color;
+    context.shadowBlur = 18;
+    context.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    context.fillStyle = '#000';
+    context.shadowBlur = 0;
+    context.font = 'bold 9px monospace';
+    context.textAlign = 'center';
+    context.fillText('CEILING', obstacle.x + obstacle.width / 2, obstacle.height - 10);
+  });
+
+  context.restore();
+}
+
 function drawScore() {
   context.save();
-  context.fillStyle = '#ffffff';
-  context.shadowColor = '#ffffff';
+  const hudColor = isSpeedMode ? speedModeColor : '#ffffff';
+  context.fillStyle = hudColor;
+  context.shadowColor = hudColor;
   context.shadowBlur = 12;
   context.font = 'bold 24px Arial, sans-serif';
   context.textBaseline = 'top';
@@ -485,13 +567,17 @@ function drawScore() {
   context.textAlign = 'right';
   context.fillText(`Score: ${score}`, viewportWidth - 24, 24);
 
-  const modeColor = gameMode === 'HARD' ? '#ff8c00' : '#39ff14';
+  const modeColor = isSpeedMode ? speedModeColor : gameMode === 'HARD' ? '#ff8c00' : '#39ff14';
   context.fillStyle = modeColor;
   context.shadowColor = modeColor;
   context.shadowBlur = 10;
   context.font = 'bold 17px Arial, sans-serif';
   context.fillText(gameMode === 'HARD' ? 'MODE: HARD DEVRİMİ' : 'MODE: BASIC', viewportWidth - 24, 56);
   context.fillText(`LVL: ${difficultyMultiplier}`, viewportWidth - 24, 78);
+  if (isSpeedMode) {
+    context.font = 'bold 16px Arial, sans-serif';
+    context.fillText('SPEED MODE ACTIVE', viewportWidth - 24, 100);
+  }
   context.restore();
 }
 
@@ -644,6 +730,7 @@ function startFromMenu() {
 function endGame() {
   gameState = 'GAMEOVER';
   gameSpeed = initialGameSpeed;
+  setSpeedMode(false);
   playGameOverSound();
   mainMenu.classList.remove('hidden');
   charMenu.classList.add('hidden');
@@ -715,7 +802,7 @@ function gameLoop(timestamp) {
 
     if (timestamp - scoreTimer >= 1000) {
       const survivedSeconds = Math.floor((timestamp - scoreTimer) / 1000);
-      score += survivedSeconds;
+      score += survivedSeconds * (isSpeedMode ? 2 : 1);
       scoreTimer += survivedSeconds * 1000;
 
       if (score > highScore) {
@@ -780,6 +867,12 @@ window.addEventListener('blur', pauseGame);
 window.addEventListener('focus', keepGamePaused);
 
 window.addEventListener('keydown', (event) => {
+  if (event.code === 'KeyM' && !event.repeat) {
+    event.preventDefault();
+    if (gameState === 'RUNNING') setSpeedMode(!isSpeedMode);
+    return;
+  }
+
   if (event.code !== 'Space' || event.repeat) return;
   event.preventDefault();
 
@@ -799,11 +892,19 @@ canvas.addEventListener('touchstart', (event) => {
 
 startBtn.addEventListener('click', () => {
   gameMode = 'BASIC';
+  setSpeedMode(false);
+  startFromMenu();
+});
+
+speedModeBtn.addEventListener('click', () => {
+  gameMode = 'BASIC';
+  setSpeedMode(true);
   startFromMenu();
 });
 
 hardModeBtn.addEventListener('click', () => {
   gameMode = 'HARD';
+  setSpeedMode(false);
   startFromMenu();
 });
 
