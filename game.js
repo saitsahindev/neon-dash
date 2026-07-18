@@ -5,6 +5,8 @@ const ui = {
   charMenu: document.getElementById('charMenu'),
   pauseMenu: document.getElementById('pauseMenu'),
   gameOverMenu: document.getElementById('gameOverMenu'),
+  touchHint: document.getElementById('touchHint'),
+  jumpZone: document.getElementById('jumpZone'),
   startBtn: document.getElementById('startBtn'),
   speedModeBtn: document.getElementById('speedModeBtn'),
   hardModeBtn: document.getElementById('hardModeBtn'),
@@ -528,6 +530,13 @@ function updateHud() {
   const abilityEnabled = state.current === State.RUNNING && cooldown <= 0;
   ui.dashBtn.disabled = !abilityEnabled || state.selectedCharacter !== 'runner';
   ui.smashBtn.disabled = !abilityEnabled || state.selectedCharacter !== 'techno_samurai';
+  if (window.innerWidth <= 900) {
+    ui.jumpZone.classList.toggle('hidden', state.current !== State.RUNNING);
+    ui.touchHint.classList.toggle('hidden', state.current !== State.RUNNING);
+  } else {
+    ui.jumpZone.classList.add('hidden');
+    ui.touchHint.classList.add('hidden');
+  }
 }
 function tick(timestamp) {
   if (!state.lastTime) state.lastTime = timestamp;

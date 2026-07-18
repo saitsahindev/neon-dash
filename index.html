@@ -37,6 +37,10 @@
       .hud-panel span { display: block; color: #c8f7ff; font-size: 0.86rem; opacity: 0.95; }
       .hud-panel strong { display: block; margin-top: 6px; font-size: 1.15rem; color: #fff; letter-spacing: 0.04em; }
       #abilityPanel { position: absolute; right: 18px; bottom: 18px; display: grid; gap: 14px; z-index: 10; pointer-events: auto; }
+      #jumpZone { display: none; position: absolute; left: 0; top: 0; bottom: 0; width: 48%; z-index: 9; background: rgba(0, 0, 0, 0.06); pointer-events: none; border-right: 1px solid rgba(14, 255, 255, 0.08); }
+      #jumpZone::after { content: 'Zıplamak için dokun'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.65); font-size: 0.92rem; letter-spacing: 0.08em; text-align: center; pointer-events: none; }
+      #touchHint { display: none; position: absolute; left: 18px; bottom: 18px; padding: 10px 14px; border-radius: 16px; background: rgba(0,0,0,0.55); border: 1px solid rgba(14,255,255,0.28); font-size: 0.78rem; letter-spacing: 0.06em; color: #c8f7ff; z-index: 10; pointer-events: none; max-width: 260px; }
+      #touchHint.hidden, #jumpZone.hidden { display: none !important; }
       .ability-btn { position: relative; min-width: 132px; min-height: 72px; padding: 0; border: 1px solid #0ef; border-radius: 24px; background: rgba(0,0,0,0.88); color: #fff; font-size: 0.98rem; font-weight: 700; text-transform: uppercase; cursor: pointer; overflow: hidden; display: grid; place-items: center; text-align: center; transition: transform 120ms ease, border-color 120ms ease, background 120ms ease; }
       .ability-btn:hover:not(:disabled) { transform: translateY(-2px); border-color: #ff2ec4; }
       .ability-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: rgba(255,255,255,0.12); }
@@ -48,9 +52,11 @@
       #gameOverScore, #gameOverHighScore { font-size: 1.05rem; margin: 12px 0 0; color: #fff; }
       #touchHint { position: absolute; left: 18px; bottom: 18px; padding: 10px 14px; border-radius: 16px; background: rgba(0,0,0,0.55); border: 1px solid rgba(14,255,255,0.28); font-size: 0.78rem; letter-spacing: 0.06em; color: #c8f7ff; z-index: 10; pointer-events: none; max-width: 260px; }
       @media (max-width: 900px) {
-        #abilityPanel { left: 50%; right: auto; bottom: 16px; transform: translateX(-50%); width: min(94%, 760px); padding: 0 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        #jumpZone { display: block; }
+        #touchHint { display: block; }
+        #abilityPanel { right: 18px; bottom: 18px; left: auto; transform: none; width: min(220px, 44vw); padding: 0; grid-template-columns: 1fr; }
         .ability-btn { min-width: 0; min-height: 82px; font-size: 1.03rem; }
-        #touchHint { left: 50%; right: auto; transform: translateX(-50%); max-width: 92%; width: auto; }
+        #touchHint { left: 18px; right: auto; transform: none; max-width: calc(100% - 48px); }
         #hud { flex-wrap: wrap; justify-content: center; gap: 10px; }
         .hud-panel { width: calc(50% - 8px); min-width: 0; }
       }
@@ -68,6 +74,7 @@
   <body>
     <div id="gameRoot">
       <canvas id="gameCanvas" aria-label="Neon Dash oyun alanı"></canvas>
+      <div id="jumpZone" aria-hidden="true"></div>
       <div id="hud">
         <div class="hud-panel"><span>SKOR</span><strong id="hudScore">0</strong></div>
         <div class="hud-panel"><span>YÜKSEK SKOR</span><strong id="hudHighScore">0</strong></div>
@@ -77,7 +84,7 @@
         <button id="dashBtn" class="ability-btn" type="button"><span class="cooldown-mask"></span><span class="label">Dash<small>D</small></span></button>
         <button id="smashBtn" class="ability-btn" type="button"><span class="cooldown-mask"></span><span class="label">Smash<small>F</small></span></button>
       </div>
-      <div id="touchHint">Sol alana dokunarak zıpla, havadayken tekrar dokunarak çift zıpla.</div>
+      <div id="touchHint">Sol alana dokunarak zıpla, sağdaki düğmelerle Dash/Smash kullan.</div>
       <section id="mainMenu" class="menu" aria-label="Ana menü">
         <div class="menu-actions">
           <h1>NEON DASH</h1>
