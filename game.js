@@ -47,6 +47,8 @@ let flipWarningUntil = 0;
 let pauseStartedAt = 0;
 let stageAlert = '';
 let stageAlertUntil = 0;
+let lastTrollSpawnAt = 0;
+let fakeErrorUntil = 0;
 
 function playJumpSound() {
   if (!audioContext) return;
@@ -106,6 +108,10 @@ function resizeCanvas() {
 function jump() {
   player.velocityY = jumpForce;
   playJumpSound();
+
+  if (gameState === 'RUNNING' && Math.random() < 0.18) {
+    spawnTrollObstacle();
+  }
 }
 
 function startGame() {
@@ -118,6 +124,7 @@ function startGame() {
   spawnTimer = performance.now();
   scoreTimer = performance.now();
   difficultyTimer = performance.now();
+  lastTrollSpawnAt = 0;
   flipLevel = 0;
   setScreenFlip(false);
   player.y = groundY;
@@ -269,6 +276,26 @@ function createObstacle() {
   }
 }
 
+function spawnTrollObstacle() {
+  const now = performance.now();
+  if (now - lastTrollSpawnAt < 4500) return;
+
+  const width = 58;
+  const height = 96;
+  obstacles.push({
+    type: 'TROLL',
+    x: Math.max(player.x + 190, viewportWidth * 0.32),
+    y: viewportHeight + height,
+    targetY: viewportHeight - height,
+    width,
+    height,
+    riseSpeed: 13,
+    color: '#39ff14',
+  });
+  lastTrollSpawnAt = now;
+  fakeErrorUntil = now + 950;
+}
+
 function hasEnoughObstacleSpacing() {
   const lastObstacle = obstacles[obstacles.length - 1];
   if (!lastObstacle) return true;
@@ -281,6 +308,10 @@ function updateObstacles() {
   for (let index = obstacles.length - 1; index >= 0; index -= 1) {
     const obstacle = obstacles[index];
     obstacle.x -= gameSpeed;
+
+    if (obstacle.type === 'TROLL' && obstacle.y > obstacle.targetY) {
+      obstacle.y = Math.max(obstacle.targetY, obstacle.y - obstacle.riseSpeed);
+    }
 
     if (obstacle.type === 'ALGORITHM') {
       obstacle.y = obstacle.baseY + Math.sin(performance.now() * 0.007 + obstacle.phase) * 72;
@@ -401,6 +432,22 @@ function drawObstacles() {
       context.textAlign = 'center';
       context.fillStyle = obstacle.color;
       context.fillText('YouTube', centerX, obstacle.y - 8);
+    } else if (obstacle.type === 'TROLL') {
+      context.fillRect(obstacle.x, obstacle.y + 18, obstacle.width, obstacle.height - 18);
+      context.beginPath();
+      context.arc(obstacle.x + obstacle.width / 2, obstacle.y + 22, 28, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = '#000';
+      context.shadowBlur = 0;
+      context.fillRect(obstacle.x + 14, obstacle.y + 17, 9, 7);
+      context.fillRect(obstacle.x + 35, obstacle.y + 17, 9, 7);
+      context.fillRect(obstacle.x + 16, obstacle.y + 35, 28, 5);
+      context.fillStyle = obstacle.color;
+      context.shadowColor = obstacle.color;
+      context.shadowBlur = 18;
+      context.font = 'bold 10px monospace';
+      context.textAlign = 'center';
+      context.fillText('404', obstacle.x + obstacle.width / 2, obstacle.y + 77);
     } else {
       const centerX = obstacle.x + obstacle.width / 2;
       const centerY = obstacle.y + obstacle.height / 2;
@@ -474,6 +521,19 @@ function drawStageAlert(timestamp) {
   context.font = 'bold 22px Arial, sans-serif';
   context.textAlign = 'center';
   context.fillText(stageAlert, viewportWidth / 2, 34);
+  context.restore();
+}
+
+function drawFakeError(timestamp) {
+  if (timestamp >= fakeErrorUntil || Math.floor(timestamp / 90) % 2 === 0) return;
+
+  context.save();
+  context.fillStyle = '#ff0055';
+  context.shadowColor = '#ff0055';
+  context.shadowBlur = 20;
+  context.font = 'bold 30px monospace';
+  context.textAlign = 'center';
+  context.fillText('ERROR 404: TROLL ALGILANDI!', viewportWidth / 2, viewportHeight / 2 - 70);
   context.restore();
 }
 
@@ -601,6 +661,9 @@ function resumeGame() {
   spawnTimer += pausedDuration;
   scoreTimer += pausedDuration;
   difficultyTimer += pausedDuration;
+  stageAlertUntil += pausedDuration;
+  fakeErrorUntil += pausedDuration;
+  flipWarningUntil += pausedDuration;
   gameState = 'RUNNING';
   pauseMenu.classList.add('hidden');
   if (audioContext && audioContext.state === 'suspended') audioContext.resume();
@@ -702,6 +765,7 @@ function gameLoop(timestamp) {
   drawScore();
   drawFlipWarning(timestamp);
   drawStageAlert(timestamp);
+  drawFakeError(timestamp);
 
   requestAnimationFrame(gameLoop);
 }
