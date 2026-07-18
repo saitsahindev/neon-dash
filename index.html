@@ -2,276 +2,124 @@
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
-    <title>Canvas Game</title>
+    <title>Neon Dash</title>
     <style>
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        overflow: hidden;
-        background: #000;
-      }
-
-      canvas {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        background: #000;
-      }
-
-      .menu {
-        position: fixed;
-        inset: 0;
-        z-index: 1;
-        display: grid;
-        place-content: center;
-        gap: 16px;
-        padding: 24px;
-        color: #fff;
-        text-align: center;
-        background: rgba(0, 0, 0, 0.78);
-        font-family: Arial, sans-serif;
-      }
-
-      .hidden {
-        display: none;
-      }
-
-      .menu button {
-        padding: 12px 20px;
-        border: 1px solid #00ffff;
-        color: #fff;
-        background: #050505;
-        cursor: pointer;
-      }
-
-      .skin-list {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-      }
-
-      .character-selection {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin: 20px 0;
-        max-width: 600px;
-      }
-
-      .character-card {
-        padding: 20px;
-        border: 2px solid #00ffff;
-        background: rgba(0, 20, 40, 0.8);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
-        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-      }
-
-      .character-card:hover {
-        border-color: #ff0055;
-        box-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
-        transform: scale(1.05);
-      }
-
-      .character-card.selected {
-        border-color: #00ff00;
-        box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
-        background: rgba(0, 40, 20, 0.9);
-      }
-
-      .character-image {
-        width: 100px;
-        height: 100px;
-        margin: 0 auto 12px;
-        background: rgba(0, 50, 100, 0.6);
-        border: 2px solid #00ffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.3);
-      }
-
-      .character-card.selected .character-image {
-        border-color: #00ff00;
-        box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.5);
-      }
-
-      .character-image img {
-        max-width: 90%;
-        max-height: 90%;
-        object-fit: contain;
-      }
-
-      .character-name {
-        font-size: 16px;
-        font-weight: bold;
-        color: #00ffff;
-        margin: 8px 0;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-      }
-
-      .character-card.selected .character-name {
-        color: #00ff00;
-      }
-
-      .character-ability {
-        font-size: 12px;
-        color: #ffff00;
-        margin: 8px 0;
-        font-style: italic;
-      }
-
-      .character-stats {
-        font-size: 11px;
-        color: #00ffff;
-        margin-top: 10px;
-        text-align: left;
-        line-height: 1.6;
-      }
-
-      .stat-bar {
-        display: flex;
-        align-items: center;
-        margin: 4px 0;
-        gap: 8px;
-      }
-
-      .stat-label {
-        min-width: 50px;
-        font-size: 10px;
-      }
-
-      .stat-fill {
-        flex: 1;
-        height: 6px;
-        background: rgba(0, 255, 255, 0.2);
-        border: 1px solid #00ffff;
-        position: relative;
-      }
-
-      .stat-progress {
-        height: 100%;
-        background: linear-gradient(90deg, #00ffff, #00ff88);
-        box-shadow: 0 0 8px #00ffff;
-      }
-
-      .skin-card {
-        width: 52px;
-        height: 52px;
-        border: 3px solid transparent;
-        cursor: pointer;
-      }
-
-      .skin-card.active {
-        border-color: #fff;
-        box-shadow: 0 0 14px currentColor;
-      }
-
-      #characterInfo {
-        position: fixed;
-        top: 24px;
-        left: 24px;
-        font-size: 14px;
-        color: #00ffff;
-        text-shadow: 0 0 10px #00ffff;
-        z-index: 2;
-        pointer-events: none;
-      }
-
-      #abilityStatus {
-        position: fixed;
-        bottom: 24px;
-        left: 24px;
-        font-size: 13px;
-        color: #ffff00;
-        text-shadow: 0 0 10px #ffff00;
-        z-index: 2;
-        pointer-events: none;
-        font-family: monospace;
-      }
-
-      .ability-cooldown {
-        display: inline-block;
-        padding: 4px 8px;
-        background: rgba(255, 255, 0, 0.1);
-        border: 1px solid #ffff00;
-        margin-top: 4px;
-      }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; }
+      body { display: flex; justify-content: center; align-items: center; }
+      #gameRoot { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #04060c; }
+      canvas { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); touch-action: none; }
+      .menu { position: absolute; inset: 0; z-index: 12; display: grid; place-content: center; gap: 18px; padding: 24px; background: rgba(0, 0, 0, 0.9); text-align: center; }
+      .menu.hidden { display: none; }
+      .menu h1 { margin: 0; font-size: 3rem; letter-spacing: 0.22em; text-transform: uppercase; color: #0ef; text-shadow: 0 0 16px rgba(0, 238, 255, 0.45); }
+      .menu p { margin: 0; font-size: 1rem; color: #c8f7ff; opacity: 0.9; }
+      .menu button { width: 100%; max-width: 320px; margin: 0 auto; padding: 14px 20px; border: 1px solid #0ef; background: rgba(5, 10, 20, 0.96); color: #fff; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
+      .menu button:hover { transform: translateY(-2px); border-color: #ff2ec4; box-shadow: 0 0 20px rgba(255, 46, 196, 0.35); }
+      .menu button.secondary { border-color: #ff2ec4; }
+      .menu-actions { display: grid; gap: 14px; width: min(100%, 760px); margin: 0 auto; }
+      .char-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 12px; }
+      .char-card { position: relative; min-height: 260px; padding: 18px; border: 1px solid rgba(0, 238, 255, 0.4); border-radius: 20px; background: rgba(4, 8, 20, 0.92); cursor: pointer; transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+      .char-card:hover { border-color: #ff2ec4; transform: translateY(-2px); }
+      .char-card.selected { border-color: #0f0; box-shadow: 0 0 22px rgba(0, 255, 0, 0.4); }
+      .avatar { height: 130px; width: 100%; display: grid; place-items: center; margin-bottom: 14px; border-radius: 18px; background: rgba(3, 10, 30, 0.95); overflow: hidden; }
+      .avatar img { max-width: 100%; max-height: 100%; object-fit: contain; }
+      .char-card h3 { margin: 0 0 8px; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.12em; color: #0ef; }
+      .ability { margin: 10px 0 12px; font-size: 0.95rem; color: #ff0; }
+      .stats { display: grid; gap: 8px; }
+      .stat { display: grid; gap: 6px; }
+      .stat-label { font-size: 0.8rem; color: rgba(255,255,255,0.75); }
+      .stat-bar { width: 100%; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; border: 1px solid rgba(14, 255, 255, 0.18); }
+      .stat-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #0ef, #3fe); box-shadow: 0 0 10px rgba(0, 238, 255, 0.25); }
+      #hud { position: absolute; top: 18px; left: 18px; right: 18px; display: flex; justify-content: space-between; gap: 12px; z-index: 10; pointer-events: none; }
+      .hud-panel { min-width: 150px; padding: 12px 16px; border-radius: 18px; background: rgba(0,0,0,0.35); border: 1px solid rgba(14,255,255,0.28); box-shadow: 0 0 20px rgba(14,255,255,0.12); }
+      .hud-panel span { display: block; color: #c8f7ff; font-size: 0.86rem; opacity: 0.95; }
+      .hud-panel strong { display: block; margin-top: 6px; font-size: 1.15rem; color: #fff; letter-spacing: 0.04em; }
+      #abilityPanel { position: absolute; right: 18px; bottom: 18px; display: grid; gap: 14px; z-index: 10; }
+      .ability-btn { position: relative; min-width: 144px; min-height: 72px; padding: 0; border: 1px solid #0ef; border-radius: 24px; background: rgba(0,0,0,0.82); color: #fff; font-size: 0.95rem; font-weight: 700; text-transform: uppercase; cursor: pointer; overflow: hidden; display: grid; place-items: center; text-align: center; transition: transform 120ms ease, border-color 120ms ease, background 120ms ease; }
+      .ability-btn:hover:not(:disabled) { transform: translateY(-2px); border-color: #ff2ec4; }
+      .ability-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: rgba(255,255,255,0.12); }
+      .ability-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, rgba(0,238,255,0.28), transparent 55%); pointer-events: none; }
+      .cooldown-mask { position: absolute; inset: 8px; border-radius: 20px; background: conic-gradient(#0ef calc(var(--ready, 0) * 1%), rgba(255,255,255,0.08) 0); mix-blend-mode: screen; }
+      .label { position: relative; z-index: 1; display: grid; gap: 6px; align-items: center; }
+      .label small { display: block; font-size: 0.74rem; color: rgba(255,255,255,0.75); letter-spacing: 0.08em; }
+      #gameOverMenu .score-panel { margin: 0 auto; max-width: 400px; padding: 18px; border-radius: 20px; background: rgba(3, 8, 18, 0.92); border: 1px solid rgba(255, 46, 196, 0.24); }
+      #gameOverScore, #gameOverHighScore { font-size: 1.05rem; margin: 12px 0 0; color: #fff; }
+      #touchHint { position: absolute; left: 18px; bottom: 18px; padding: 10px 14px; border-radius: 16px; background: rgba(0,0,0,0.55); border: 1px solid rgba(14,255,255,0.28); font-size: 0.78rem; letter-spacing: 0.06em; color: #c8f7ff; z-index: 10; pointer-events: none; max-width: 260px; }
+      @media (max-width: 660px) { .menu { padding: 16px; } .menu h1 { font-size: 2.4rem; } .char-list { grid-template-columns: 1fr; } .ability-btn { min-width: 132px; min-height: 66px; } #hud { flex-direction: column; align-items: flex-start; } }
     </style>
   </head>
   <body>
-    <canvas id="game-canvas" aria-label="Oyun alanı"></canvas>
-    <div id="characterInfo"></div>
-    <div id="abilityStatus"></div>
-    <section id="mainMenu" class="menu" aria-label="Ana menü">
-      <h1>NEON DASH</h1>
-      <button id="startBtn" type="button">OYNA</button>
-      <button id="speedModeBtn" type="button">SPEED MODE</button>
-      <button id="hardModeBtn" type="button">HARD MODE</button>
-      <button id="charSelectBtn" type="button">KARAKTER SEÇ</button>
-    </section>
-    <section id="charMenu" class="menu hidden" aria-label="Karakter seçimi">
-      <h2>KARAKTERİNİ SEÇ</h2>
-      <div class="character-selection">
-        <div class="character-card" data-character="runner">
-          <div class="character-image">
-            <img src="assets/graphics/characters/runner.svg" alt="Neon Runner">
-          </div>
-          <div class="character-name">Neon Runner</div>
-          <div class="character-ability">⚡ Yetenek: DASH</div>
-          <div class="character-stats">
-            <div class="stat-bar">
-              <span class="stat-label">Hız</span>
-              <div class="stat-fill"><div class="stat-progress" style="width: 85%"></div></div>
-            </div>
-            <div class="stat-bar">
-              <span class="stat-label">Zıplama</span>
-              <div class="stat-fill"><div class="stat-progress" style="width: 65%"></div></div>
-            </div>
-            <div class="stat-bar">
-              <span class="stat-label">Özel</span>
-              <div class="stat-fill"><div class="stat-progress" style="width: 90%"></div></div>
-            </div>
-          </div>
-        </div>
-        <div class="character-card" data-character="techno_samurai">
-          <div class="character-image">
-            <img src="assets/graphics/characters/techno_samurai.svg" alt="Techno-Samurai">
-          </div>
-          <div class="character-name">Techno-Samurai</div>
-          <div class="character-ability">⚔️ Yetenek: SMASH ATTACK</div>
-          <div class="character-stats">
-            <div class="stat-bar">
-              <span class="stat-label">Hız</span>
-              <div class="stat-fill"><div class="stat-progress" style="width: 60%"></div></div>
-            </div>
-            <div class="stat-bar">
-              <span class="stat-label">Zıplama</span>
-              <div class="stat-fill"><div class="stat-progress" style="width: 85%"></div></div>
-            </div>
-            <div class="stat-bar">
-              <span class="stat-label">Özel</span>
-              <div class="stat-fill"><div class="stat-progress" style="width: 80%"></div></div>
-            </div>
-          </div>
-        </div>
+    <div id="gameRoot">
+      <canvas id="gameCanvas" aria-label="Neon Dash oyun alanı"></canvas>
+      <div id="hud">
+        <div class="hud-panel"><span>SKOR</span><strong id="hudScore">0</strong></div>
+        <div class="hud-panel"><span>YÜKSEK SKOR</span><strong id="hudHighScore">0</strong></div>
+        <div class="hud-panel"><span>KARAKTER</span><strong id="hudCharacter">NEON RUNNER</strong></div>
       </div>
-      <button id="backMenuBtn" type="button">GERİ</button>
-    </section>
-    <section id="pauseMenu" class="menu hidden" aria-label="Duraklatma menüsü">
-      <h2>OYUN DURAKLATILDI</h2>
-      <button id="resumeBtn" type="button">DEVAM ET</button>
-    </section>
+      <div id="abilityPanel">
+        <button id="dashBtn" class="ability-btn" type="button"><span class="cooldown-mask"></span><span class="label">Dash<small>D</small></span></button>
+        <button id="smashBtn" class="ability-btn" type="button"><span class="cooldown-mask"></span><span class="label">Smash<small>F</small></span></button>
+      </div>
+      <div id="touchHint">Sol alana dokunarak zıpla, havadayken tekrar dokunarak çift zıpla.</div>
+      <section id="mainMenu" class="menu" aria-label="Ana menü">
+        <div class="menu-actions">
+          <h1>NEON DASH</h1>
+          <p>Siberpunk koşu deneyimini masaüstü ve mobilde yaşa.</p>
+          <button id="startBtn" type="button">OYNA</button>
+          <button id="speedModeBtn" type="button">SPEED MODE</button>
+          <button id="hardModeBtn" type="button">HARD MODE</button>
+          <button id="charSelectBtn" type="button">KARAKTER SEÇ</button>
+        </div>
+      </section>
+      <section id="charMenu" class="menu hidden" aria-label="Karakter seçimi">
+        <div class="menu-actions">
+          <h1>KARAKTERİNİ SEÇ</h1>
+          <p>Her biri farklı oynanış ve özel yetenek sunar.</p>
+          <div class="char-list">
+            <div class="char-card selected" data-char="runner">
+              <div class="avatar"><img src="assets/graphics/characters/runner.svg" alt="Neon Runner"></div>
+              <h3>Neon Runner</h3>
+              <div class="ability">Yetenek: Dash</div>
+              <div class="stats">
+                <div class="stat"><span class="stat-label">Hız</span><div class="stat-bar"><div class="stat-fill" style="width: 92%"></div></div></div>
+                <div class="stat"><span class="stat-label">Zıplama</span><div class="stat-bar"><div class="stat-fill" style="width: 65%"></div></div></div>
+                <div class="stat"><span class="stat-label">Özel</span><div class="stat-bar"><div class="stat-fill" style="width: 90%"></div></div></div>
+              </div>
+            </div>
+            <div class="char-card" data-char="techno_samurai">
+              <div class="avatar"><img src="assets/graphics/characters/techno_samurai.svg" alt="Techno-Samurai"></div>
+              <h3>Techno-Samurai</h3>
+              <div class="ability">Yetenek: Smash Attack</div>
+              <div class="stats">
+                <div class="stat"><span class="stat-label">Hız</span><div class="stat-bar"><div class="stat-fill" style="width: 58%"></div></div></div>
+                <div class="stat"><span class="stat-label">Zıplama</span><div class="stat-bar"><div class="stat-fill" style="width: 88%"></div></div></div>
+                <div class="stat"><span class="stat-label">Özel</span><div class="stat-bar"><div class="stat-fill" style="width: 82%"></div></div></div>
+              </div>
+            </div>
+          </div>
+          <button id="backMenuBtn" class="secondary" type="button">GERİ</button>
+        </div>
+      </section>
+      <section id="pauseMenu" class="menu hidden" aria-label="Duraklatma menüsü">
+        <div class="menu-actions">
+          <h1>OYUN DURAKLATILDI</h1>
+          <p>Tekrar başlamak veya devam etmek için tıklayın.</p>
+          <button id="resumeBtn" type="button">DEVAM ET</button>
+        </div>
+      </section>
+      <section id="gameOverMenu" class="menu hidden" aria-label="Oyun bitti menüsü">
+        <div class="menu-actions">
+          <h1>GAME OVER</h1>
+          <div class="score-panel">
+            <div id="gameOverScore">Skor: 0</div>
+            <div id="gameOverHighScore">Yüksek Skor: 0</div>
+          </div>
+          <button id="restartBtn" type="button">YENİDEN BAŞLA</button>
+        </div>
+      </section>
+    </div>
     <script src="game.js"></script>
   </body>
 </html>
