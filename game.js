@@ -11,8 +11,49 @@ const resumeBtn = document.getElementById('resumeBtn');
 const hardModeBtn = document.getElementById('hardModeBtn');
 const charSelectBtn = document.getElementById('charSelectBtn');
 const backMenuBtn = document.getElementById('backMenuBtn');
-const skinCards = document.querySelectorAll('.skin-card');
+const characterCards = document.querySelectorAll('.character-card');
+const charInfoDisplay = document.getElementById('characterInfo');
+const abilityStatusDisplay = document.getElementById('abilityStatus');
 const jumpForce = -11.5;
+
+// Character images
+const characterImages = {};
+let selectedCharacter = 'runner';
+
+// Character definitions
+const characters = {
+  runner: {
+    name: 'NEON RUNNER',
+    speedMultiplier: 1.15,
+    jumpForceMultiplier: 1,
+    color: '#00ffff',
+    abilityName: 'DASH',
+    abilityKey: 'KeyD',
+    baseCooldown: 4000,
+  },
+  techno_samurai: {
+    name: 'TECHNO-SAMURAI',
+    speedMultiplier: 0.9,
+    jumpForceMultiplier: 1.25,
+    color: '#ff00ff',
+    abilityName: 'SMASH ATTACK',
+    abilityKey: 'KeyF',
+    baseCooldown: 5000,
+  },
+};
+
+// Load character images
+function loadCharacterImages() {
+  characters.runner.imagePath = 'assets/graphics/characters/runner.svg';
+  characters.techno_samurai.imagePath = 'assets/graphics/characters/techno_samurai.svg';
+  
+  Object.entries(characters).forEach(([key, char]) => {
+    const img = new Image();
+    img.src = char.imagePath;
+    img.onerror = () => console.warn(`Could not load image for ${key}`);
+    characterImages[key] = img;
+  });
+}
 
 const player = {
   x: 72,
@@ -22,6 +63,11 @@ const player = {
   velocityY: 0,
   gravity: 0.55,
   color: '#00ffff',
+  dashActive: false,
+  dashEndTime: 0,
+  dashDirection: 1,
+  abilityLastUsed: 0,
+  abilityCooldown: 4000,
 };
 
 const obstacles = [];
@@ -69,6 +115,34 @@ function playJumpSound() {
   oscillator.connect(gain).connect(audioContext.destination);
   oscillator.start(now);
   oscillator.stop(now + 0.1);
+}
+
+function playAbilitySound(type) {
+  if (!audioContext) return;
+  if (audioContext.state === 'suspended') audioContext.resume();
+
+  const now = audioContext.currentTime;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = type === 'dash' ? 'sine' : 'triangle';
+  
+  if (type === 'dash') {
+    oscillator.frequency.setValueAtTime(600, now);
+    oscillator.frequency.exponentialRampToValueAtTime(900, now + 0.15);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.15);
+  } else {
+    oscillator.frequency.setValueAtTime(150, now);
+    oscillator.frequency.linearRampToValueAtTime(400, now + 0.2);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.2);
+  }
 }
 
 function getEffectiveGameSpeed() {
@@ -119,12 +193,83 @@ function resizeCanvas() {
 }
 
 function jump() {
-  player.velocityY = jumpForce;
+  const charData = characters[selectedCharacter];
+  player.velocityY = jumpForce * charData.jumpForceMultiplier;
   playJumpSound();
 
   if (gameState === 'RUNNING' && Math.random() < 0.18) {
     spawnTrollObstacle();
   }
+}
+
+function activateDash() {
+  if (selectedCharacter !== 'runner') return;
+  if (gameState !== 'RUNNING') return;
+  
+  const now = performance.now();
+  if (now - player.abilityLastUsed < player.abilityCooldown) return;
+
+  player.dashActive = true;
+  player.dashEndTime = now + 400;
+  player.abilityLastUsed = now;
+  playAbilitySound('dash');
+  
+  const burstX = player.x + player.width / 2;
+  const burstY = player.y + player.height / 2;
+  createBurst(burstX, burstY);
+}
+
+function activateSmashAttack() {
+  if (selectedCharacter !== 'techno_samurai') return;
+  if (gameState !== 'RUNNING') return;
+
+  const now = performance.now();
+  if (now - player.abilityLastUsed < player.abilityCooldown) return;
+
+  const nearestObstacle = getNearestObstacle();
+  if (!nearestObstacle) return;
+
+  player.abilityLastUsed = now;
+  playAbilitySound('smash');
+  
+  const obstacleIndex = obstacles.indexOf(nearestObstacle);
+  if (obstacleIndex > -1) {
+    obstacles.splice(obstacleIndex, 1);
+    createBurst(
+      nearestObstacle.x + nearestObstacle.width / 2,
+      nearestObstacle.y + nearestObstacle.height / 2
+    );
+    score += 50;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('highScore', highScore.toString());
+    }
+  }
+}
+
+function getNearestObstacle() {
+  if (obstacles.length === 0) return null;
+
+  const playerCenterX = player.x + player.width / 2;
+  let nearest = obstacles[0];
+  let nearestDistance = Math.abs(nearest.x + nearest.width / 2 - playerCenterX);
+
+  for (let i = 1; i < obstacles.length; i += 1) {
+    const obstacle = obstacles[i];
+    const distance = Math.abs(obstacle.x + obstacle.width / 2 - playerCenterX);
+    if (distance < nearestDistance) {
+      nearest = obstacle;
+      nearestDistance = distance;
+    }
+  }
+
+  return nearest;
+}
+
+function updateCharacterAbilityCooldown() {
+  const charData = characters[selectedCharacter];
+  const cooldownReduction = Math.floor(score / 500) * 200;
+  player.abilityCooldown = Math.max(1000, charData.baseCooldown - cooldownReduction);
 }
 
 function startGame() {
@@ -143,6 +288,12 @@ function startGame() {
   setScreenFlip(false);
   player.y = groundY;
   player.velocityY = 0;
+  player.dashActive = false;
+  player.abilityLastUsed = 0;
+  updateCharacterAbilityCooldown();
+  
+  const charData = characters[selectedCharacter];
+  player.color = charData.color;
 }
 
 function setScreenFlip(shouldFlip) {
@@ -163,6 +314,12 @@ function handleJumpInput() {
 }
 
 function update() {
+  if (player.dashActive && performance.now() < player.dashEndTime) {
+    player.x += 18;
+  } else {
+    player.dashActive = false;
+  }
+
   player.velocityY += player.gravity;
   player.y += player.velocityY;
   player.y = Math.max(0, player.y);
@@ -179,10 +336,29 @@ function update() {
 
 function drawPlayer() {
   context.save();
-  context.fillStyle = player.color;
-  context.shadowColor = player.color;
-  context.shadowBlur = 22;
-  context.fillRect(player.x, player.y, player.width, player.height);
+  const charData = characters[selectedCharacter];
+  const playerImage = characterImages[selectedCharacter];
+
+  if (playerImage && playerImage.complete) {
+    context.shadowColor = player.color;
+    context.shadowBlur = 15;
+    context.drawImage(playerImage, player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+  } else {
+    context.fillStyle = player.color;
+    context.shadowColor = player.color;
+    context.shadowBlur = 22;
+    context.fillRect(player.x, player.y, player.width, player.height);
+  }
+
+  if (player.dashActive) {
+    context.strokeStyle = charData.color;
+    context.shadowColor = charData.color;
+    context.shadowBlur = 25;
+    context.lineWidth = 3;
+    context.globalAlpha = 0.6;
+    context.strokeRect(player.x - 3, player.y - 3, player.width + 6, player.height + 6);
+  }
+
   context.restore();
 }
 
@@ -552,6 +728,59 @@ function drawTopObstacles() {
   context.restore();
 }
 
+function updateCharacterInfoDisplay() {
+  if (gameState !== 'RUNNING') {
+    charInfoDisplay.textContent = '';
+    return;
+  }
+
+  const charData = characters[selectedCharacter];
+  const now = performance.now();
+  const cooldownRemaining = Math.max(0, player.abilityCooldown - (now - player.abilityLastUsed));
+  const cooldownPercent = Math.floor((cooldownRemaining / player.abilityCooldown) * 100);
+  
+  charInfoDisplay.innerHTML = `
+    <div style="font-weight: bold; font-size: 16px; color: ${charData.color}; text-shadow: 0 0 10px ${charData.color};">
+      ► ${charData.name}
+    </div>
+    <div style="font-size: 12px; margin-top: 4px; color: #ffff00;">
+      Yetenek: ${charData.abilityName}
+    </div>
+  `;
+}
+
+function updateAbilityStatusDisplay() {
+  if (gameState !== 'RUNNING') {
+    abilityStatusDisplay.textContent = '';
+    return;
+  }
+
+  const charData = characters[selectedCharacter];
+  const now = performance.now();
+  const cooldownRemaining = Math.max(0, player.abilityCooldown - (now - player.abilityLastUsed));
+  const cooldownPercent = Math.floor((cooldownRemaining / player.abilityCooldown) * 100);
+  const isReady = cooldownRemaining <= 0;
+
+  let statusText = '';
+  let statusColor = '#ffff00';
+  
+  if (selectedCharacter === 'runner') {
+    statusText = `[D] DASH: `;
+  } else {
+    statusText = `[F] SMASH: `;
+  }
+
+  if (isReady) {
+    statusText += `✓ HAZIR`;
+    statusColor = '#00ff00';
+  } else {
+    statusText += `${cooldownPercent}%`;
+    statusColor = '#ff6600';
+  }
+
+  abilityStatusDisplay.innerHTML = `<div style="color: ${statusColor}; text-shadow: 0 0 8px ${statusColor};">${statusText}</div>`;
+}
+
 function drawScore() {
   context.save();
   const hudColor = isSpeedMode ? speedModeColor : '#ffffff';
@@ -824,6 +1053,8 @@ function gameLoop(timestamp) {
         localStorage.setItem('highScore', highScore.toString());
       }
 
+      updateCharacterAbilityCooldown();
+
       if (gameMode === 'BASIC') {
         const nextDifficultyMultiplier = score > 75 ? 3 : score > 30 ? 2 : 1;
         if (nextDifficultyMultiplier > difficultyMultiplier) {
@@ -874,6 +1105,8 @@ function gameLoop(timestamp) {
   drawFlipWarning(timestamp);
   drawStageAlert(timestamp);
   drawFakeError(timestamp);
+  updateCharacterInfoDisplay();
+  updateAbilityStatusDisplay();
 
   requestAnimationFrame(gameLoop);
 }
@@ -886,6 +1119,22 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'KeyM' && !event.repeat) {
     event.preventDefault();
     if (gameState === 'RUNNING') setSpeedMode(!isSpeedMode);
+    return;
+  }
+
+  if (event.code === 'KeyD' && !event.repeat) {
+    event.preventDefault();
+    if (gameState === 'RUNNING' && selectedCharacter === 'runner') {
+      activateDash();
+    }
+    return;
+  }
+
+  if (event.code === 'KeyF' && !event.repeat) {
+    event.preventDefault();
+    if (gameState === 'RUNNING' && selectedCharacter === 'techno_samurai') {
+      activateSmashAttack();
+    }
     return;
   }
 
@@ -936,14 +1185,18 @@ backMenuBtn.addEventListener('click', () => {
   mainMenu.classList.remove('hidden');
 });
 
-skinCards.forEach((card) => {
+characterCards.forEach((card) => {
   card.addEventListener('click', () => {
-    player.color = card.dataset.color;
-    skinCards.forEach((skinCard) => skinCard.classList.remove('active'));
-    card.classList.add('active');
+    selectedCharacter = card.dataset.character;
+    characterCards.forEach((c) => c.classList.remove('selected'));
+    card.classList.add('selected');
+    const charData = characters[selectedCharacter];
+    player.color = charData.color;
+    player.abilityCooldown = charData.baseCooldown;
   });
 });
 
+loadCharacterImages();
 resizeCanvas();
 player.y = groundY;
 gameLoop();
