@@ -175,6 +175,8 @@ function startGame() {
   player.abilityLastUsed = performance.now() - player.abilityCooldown;
   player.trailTimer = 0;
   player.shakeUntil = 0;
+  const isPortrait = virtual.height > virtual.width;
+  player.x = isPortrait ? (virtual.width - player.width) / 2 : 180;
   setState(State.RUNNING);
   state.lastTime = performance.now();
 }
