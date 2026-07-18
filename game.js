@@ -200,16 +200,9 @@ function getPointerPosition(event) {
 }
 function attemptJump() {
   if (state.current !== State.RUNNING) return;
-  if (player.grounded) {
-    player.vy = characters[state.selectedCharacter].jumpForce;
-    player.grounded = false;
-    player.jumps = 1;
-    return;
-  }
-  if (player.jumps < characters[state.selectedCharacter].maxJumps) {
-    player.vy = characters[state.selectedCharacter].jumpForce;
-    player.jumps += 1;
-  }
+  player.vy = characters[state.selectedCharacter].jumpForce;
+  player.grounded = false;
+  player.jumps += 1;
 }
 function performAbility() {
   if (state.current !== State.RUNNING) return;
