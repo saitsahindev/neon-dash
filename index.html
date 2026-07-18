@@ -7,10 +7,10 @@
     <title>Neon Dash</title>
     <style>
       * { box-sizing: border-box; }
-      html, body { width: 100%; min-height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; touch-action: none; overscroll-behavior: none; -webkit-user-select: none; }
-      body { display: flex; justify-content: center; align-items: center; min-height: 100vh; height: 100vh; }
-      #gameRoot { position: relative; width: 100vw; min-height: 100vh; height: 100vh; max-height: 100dvh; overflow: hidden; background: #04060c; padding-bottom: env(safe-area-inset-bottom); }
-      canvas { position: absolute; inset: 0; margin: auto; touch-action: none; max-width: 100vw; max-height: 100vh; width: 100%; height: 100%; }
+      html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+      body { min-height: 100%; }
+      #gameRoot { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 100dvh; overflow: hidden; background: #04060c; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+      canvas { position: absolute; inset: 0; margin: auto; touch-action: none; width: 100%; height: 100%; max-width: 100%; max-height: 100%; display: block; }
       .menu { position: absolute; inset: 0; z-index: 12; display: grid; place-content: center; gap: 18px; padding: 24px; background: rgba(0, 0, 0, 0.92); text-align: center; }
       .menu.hidden { display: none; }
       .menu h1 { margin: 0; font-size: 3rem; letter-spacing: 0.22em; text-transform: uppercase; color: #0ef; text-shadow: 0 0 16px rgba(0, 238, 255, 0.45); }
@@ -32,14 +32,14 @@
       .stat-label { font-size: 0.8rem; color: rgba(255,255,255,0.75); }
       .stat-bar { width: 100%; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; border: 1px solid rgba(14, 255, 255, 0.18); }
       .stat-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #0ef, #3fe); box-shadow: 0 0 10px rgba(0, 238, 255, 0.25); }
-      #hud { position: absolute; top: 18px; left: 18px; right: 18px; display: flex; justify-content: space-between; gap: 12px; z-index: 10; pointer-events: none; }
-      .hud-panel { min-width: 150px; padding: 12px 16px; border-radius: 18px; background: rgba(0,0,0,0.35); border: 1px solid rgba(14,255,255,0.28); box-shadow: 0 0 20px rgba(14,255,255,0.12); }
-      .hud-panel span { display: block; color: #c8f7ff; font-size: 0.86rem; opacity: 0.95; }
-      .hud-panel strong { display: block; margin-top: 6px; font-size: 1.15rem; color: #fff; letter-spacing: 0.04em; }
-      #abilityPanel { position: absolute; right: 18px; bottom: 18px; display: grid; gap: 14px; z-index: 10; pointer-events: auto; }
-      #jumpZone { display: none; position: absolute; left: 0; top: 0; bottom: 0; width: 48%; z-index: 9; background: rgba(0, 0, 0, 0.06); pointer-events: none; border-right: 1px solid rgba(14, 255, 255, 0.08); }
-      #jumpZone::after { content: 'Zıplamak için dokun'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.65); font-size: 0.92rem; letter-spacing: 0.08em; text-align: center; pointer-events: none; }
-      #touchHint { display: none; position: absolute; left: 18px; bottom: 18px; padding: 10px 14px; border-radius: 16px; background: rgba(0,0,0,0.55); border: 1px solid rgba(14,255,255,0.28); font-size: 0.78rem; letter-spacing: 0.06em; color: #c8f7ff; z-index: 10; pointer-events: none; max-width: 260px; }
+      #hud { position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 10px; z-index: 10; pointer-events: none; }
+      .hud-panel { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,0.35); border: 1px solid rgba(14,255,255,0.28); box-shadow: 0 0 20px rgba(14,255,255,0.12); }
+      .hud-panel span { display: block; color: #c8f7ff; font-size: 0.76rem; opacity: 0.95; }
+      .hud-panel strong { display: block; margin-top: 4px; font-size: 1rem; color: #fff; letter-spacing: 0.04em; }
+      #abilityPanel { position: absolute; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 10px; z-index: 10; pointer-events: auto; }
+      #jumpZone { display: none; position: absolute; left: 0; top: 0; bottom: 0; width: 56%; z-index: 9; background: rgba(0, 0, 0, 0.06); pointer-events: none; border-right: 1px solid rgba(14, 255, 255, 0.08); }
+      #jumpZone::after { content: 'Zıplamak için dokun'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.65); font-size: 0.9rem; letter-spacing: 0.08em; text-align: center; pointer-events: none; }
+      #touchHint { display: none; position: absolute; left: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); padding: 8px 10px; border-radius: 12px; background: rgba(0,0,0,0.55); border: 1px solid rgba(14,255,255,0.28); font-size: 0.7rem; letter-spacing: 0.06em; color: #c8f7ff; z-index: 10; pointer-events: none; max-width: min(240px, calc(100% - 170px)); }
       #touchHint.hidden, #jumpZone.hidden { display: none !important; }
       .ability-btn { position: relative; min-width: 132px; min-height: 72px; padding: 0; border: 1px solid #0ef; border-radius: 24px; background: rgba(0,0,0,0.88); color: #fff; font-size: 0.98rem; font-weight: 700; text-transform: uppercase; cursor: pointer; overflow: hidden; display: grid; place-items: center; text-align: center; transition: transform 120ms ease, border-color 120ms ease, background 120ms ease; }
       .ability-btn:hover:not(:disabled) { transform: translateY(-2px); border-color: #ff2ec4; }
@@ -54,20 +54,20 @@
       @media (max-width: 900px) {
         #jumpZone { display: block; }
         #touchHint { display: block; }
-        #abilityPanel { right: 18px; bottom: 18px; left: auto; transform: none; width: min(220px, 44vw); padding: 0; grid-template-columns: 1fr; }
-        .ability-btn { min-width: 0; min-height: 82px; font-size: 1.03rem; }
-        #touchHint { left: 18px; right: auto; transform: none; max-width: calc(100% - 48px); }
-        #hud { flex-wrap: wrap; justify-content: center; gap: 10px; }
-        .hud-panel { width: calc(50% - 8px); min-width: 0; }
+        #abilityPanel { right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); left: auto; transform: none; width: min(150px, 38vw); padding: 0; grid-template-columns: 1fr; }
+        .ability-btn { min-width: 0; min-height: 60px; font-size: 0.9rem; }
+        #hud { top: calc(8px + env(safe-area-inset-top)); left: 8px; right: 8px; gap: 8px; }
+        .hud-panel { padding: 8px 10px; }
+        .hud-panel span { font-size: 0.68rem; }
+        .hud-panel strong { font-size: 0.92rem; }
       }
       @media (max-width: 660px) {
         .menu { padding: 16px; }
         .menu h1 { font-size: 2.4rem; }
         .char-list { grid-template-columns: 1fr; }
-        .ability-btn { min-width: 0; min-height: 72px; font-size: 1rem; }
-        #hud { flex-direction: column; align-items: flex-start; }
-        .hud-panel { width: 100%; }
-        #touchHint { bottom: 104px; left: 50%; transform: translateX(-50%); }
+        #abilityPanel { width: min(132px, 40vw); gap: 8px; }
+        .ability-btn { min-height: 54px; font-size: 0.84rem; }
+        #touchHint { display: none; }
       }
     </style>
   </head>
