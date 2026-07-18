@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <title>Canvas Game</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+      }
+
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        background: #000;
+      }
+
+      .menu {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        display: grid;
+        place-content: center;
+        gap: 16px;
+        padding: 24px;
+        color: #fff;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.78);
+        font-family: Arial, sans-serif;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .menu button {
+        padding: 12px 20px;
+        border: 1px solid #00ffff;
+        color: #fff;
+        background: #050505;
+        cursor: pointer;
+      }
+
+      .skin-list {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+      }
+
+      .skin-card {
+        width: 52px;
+        height: 52px;
+        border: 3px solid transparent;
+        cursor: pointer;
+      }
+
+      .skin-card.active {
+        border-color: #fff;
+        box-shadow: 0 0 14px currentColor;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game-canvas" aria-label="Oyun alanı"></canvas>
+    <section id="mainMenu" class="menu" aria-label="Ana menü">
+      <h1>NEON DASH</h1>
+      <button id="startBtn" type="button">OYNA</button>
+      <button id="hardModeBtn" type="button">HARD MODE</button>
+      <button id="charSelectBtn" type="button">KARAKTER SEÇ</button>
+    </section>
+    <section id="charMenu" class="menu hidden" aria-label="Karakter seçimi">
+      <h2>KARAKTERİNİ SEÇ</h2>
+      <div class="skin-list">
+        <button class="skin-card active" type="button" data-color="#00ffff" style="background: #00ffff" aria-label="Camgöbeği karakter"></button>
+        <button class="skin-card" type="button" data-color="#ff0055" style="background: #ff0055" aria-label="Pembe karakter"></button>
+        <button class="skin-card" type="button" data-color="#39ff14" style="background: #39ff14" aria-label="Yeşil karakter"></button>
+      </div>
+      <button id="backMenuBtn" type="button">GERİ</button>
+    </section>
+    <section id="pauseMenu" class="menu hidden" aria-label="Duraklatma menüsü">
+      <h2>OYUN DURAKLATILDI</h2>
+      <button id="resumeBtn" type="button">DEVAM ET</button>
+    </section>
+    <script src="game.js"></script>
+  </body>
+</html>
