@@ -19,6 +19,8 @@ const ui = {
   smashBtn: document.getElementById('smashBtn'),
   hudScore: document.getElementById('hudScore'),
   hudHighScore: document.getElementById('hudHighScore'),
+  comboBadge: document.getElementById('comboBadge'),
+  achievementToast: document.getElementById('achievementToast'),
   gameOverScore: document.getElementById('gameOverScore'),
   gameOverHighScore: document.getElementById('gameOverHighScore'),
   charCards: document.querySelectorAll('.char-card'),
@@ -77,6 +79,12 @@ const state = {
   backgroundFactor: 0,
   isSpeedMode: false,
   isHardMode: false,
+  combo: 1,
+  bestCombo: 1,
+  comboTimer: 0,
+  toastTimer: 0,
+  screenShake: 0,
+  achievements: [],
 };
 const ambient = { groundY: virtual.height - 128, lastSpawn: 0, lastLaser: 0 };
 const audioContext = window.AudioContext ? new window.AudioContext() : null;
@@ -144,6 +152,14 @@ function startGame() {
   state.spawnAt = 0;
   state.laserAt = 0;
   state.backgroundFactor = 0;
+  state.combo = 1;
+  state.bestCombo = 1;
+  state.comboTimer = 0;
+  state.toastTimer = 0;
+  state.screenShake = 0;
+  state.achievements = [];
+  ui.comboBadge.textContent = 'COMBO x1';
+  ui.achievementToast.classList.add('hidden');
   ambient.lastSpawn = performance.now();
   ambient.lastLaser = performance.now();
   setCharacter(state.selectedCharacter);
@@ -170,6 +186,8 @@ function endGame() {
   }
   ui.gameOverScore.textContent = `Skor: ${Math.floor(state.score)}`;
   ui.gameOverHighScore.textContent = `Yüksek Skor: ${state.highScore}`;
+  playSound('crash');
+  state.screenShake = 18;
   setState(State.GAMEOVER);
 }
 function pauseGame() {
@@ -187,15 +205,55 @@ function playSound(type) {
   const now = audioContext.currentTime;
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
-  osc.type = type === 'dash' ? 'sine' : 'triangle';
-  osc.frequency.setValueAtTime(type === 'dash' ? 560 : 180, now);
-  if (type === 'dash') osc.frequency.exponentialRampToValueAtTime(920, now + 0.18);
-  else osc.frequency.linearRampToValueAtTime(420, now + 0.22);
-  gain.gain.setValueAtTime(0.12, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+  const wave = type === 'dash' ? 'sine' : type === 'smash' ? 'square' : type === 'crash' ? 'sawtooth' : 'triangle';
+  const freq = type === 'dash' ? 640 : type === 'smash' ? 430 : type === 'crash' ? 180 : type === 'score' ? 880 : 320;
+  osc.type = wave;
+  osc.frequency.setValueAtTime(freq, now);
+  if (type === 'dash') osc.frequency.exponentialRampToValueAtTime(980, now + 0.16);
+  else if (type === 'smash') osc.frequency.exponentialRampToValueAtTime(620, now + 0.2);
+  else if (type === 'crash') osc.frequency.linearRampToValueAtTime(120, now + 0.24);
+  else if (type === 'score') osc.frequency.exponentialRampToValueAtTime(1320, now + 0.2);
+  else osc.frequency.linearRampToValueAtTime(420, now + 0.2);
+  gain.gain.setValueAtTime(type === 'crash' ? 0.18 : 0.11, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
   osc.connect(gain).connect(audioContext.destination);
   osc.start(now);
-  osc.stop(now + 0.22);
+  osc.stop(now + 0.24);
+}
+function showToast(message) {
+  ui.achievementToast.textContent = message;
+  ui.achievementToast.classList.remove('hidden');
+  state.toastTimer = 1.8;
+}
+function updateToast(dt) {
+  if (state.toastTimer <= 0) return;
+  state.toastTimer -= dt;
+  if (state.toastTimer <= 0) {
+    ui.achievementToast.classList.add('hidden');
+  }
+}
+function triggerCombo(delta) {
+  state.combo = Math.max(1, state.combo + delta);
+  state.comboTimer = 1.6;
+  state.bestCombo = Math.max(state.bestCombo, state.combo);
+  ui.comboBadge.textContent = `COMBO x${state.combo}`;
+  if (state.combo >= 3 && state.combo % 3 === 0) {
+    showToast(`COMBO x${state.combo}`);
+  }
+}
+function unlockAchievement(id, label, message) {
+  if (state.achievements.includes(id)) return;
+  state.achievements.push(id);
+  showToast(message);
+  playSound('score');
+}
+function checkAchievements() {
+  const score = Math.floor(state.score);
+  if (score >= 80 && !state.achievements.includes('pulse')) unlockAchievement('pulse', 'First Pulse', 'FIRST PULSE');
+  if (score >= 220 && !state.achievements.includes('neon')) unlockAchievement('neon', 'Neon Drift', 'NEON DRIFT');
+  if (score >= 500 && !state.achievements.includes('cyber')) unlockAchievement('cyber', 'Cyber Rush', 'CYBER RUSH');
+  if (state.bestCombo >= 5 && !state.achievements.includes('combo')) unlockAchievement('combo', 'Combo Breaker', 'COMBO BREAKER');
+  if (state.isHardMode && score >= 300 && !state.achievements.includes('hardcore')) unlockAchievement('hardcore', 'Hardcore', 'HARDCORE');
 }
 function getPointerPosition(event) {
   const touch = event.touches && event.touches[0];
@@ -223,10 +281,14 @@ function performAbility() {
     player.invincibleUntil = player.dashUntil;
     player.trailTimer = 0;
     playSound('dash');
+    state.screenShake = 6;
+    triggerCombo(1);
     return;
   }
   player.shakeUntil = now + characters.techno_samurai.ability.duration * 1000;
   playSound('smash');
+  state.screenShake = 8;
+  triggerCombo(1);
   eliminateNearest(2);
 }
 function eliminateNearest(count) {
@@ -243,6 +305,7 @@ function eliminateNearest(count) {
       if (index >= 0) active.obstacles.splice(index, 1);
       release(pools.obstacles, item);
     }
+    triggerCombo(1);
   });
 }
 function spawnObstacle() {
@@ -304,6 +367,22 @@ function spawnParticles(x, y, color) {
     particle.life = 0.62 + Math.random() * 0.28;
     particle.alpha = 1;
     particle.color = color;
+    active.particles.push(particle);
+  }
+}
+function spawnAmbientParticles() {
+  const count = 2 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i += 1) {
+    const particle = obtain(pools.particles, () => ({ active: true, x: 0, y: 0, dx: 0, dy: 0, life: 0, alpha: 1, size: 0, color: '#0ef' }));
+    particle.active = true;
+    particle.x = virtual.width + 20;
+    particle.y = 80 + Math.random() * (virtual.height - 180);
+    particle.dx = -(80 + Math.random() * 140);
+    particle.dy = (Math.random() - 0.5) * 70;
+    particle.size = 2 + Math.random() * 3;
+    particle.life = 1.2 + Math.random() * 0.8;
+    particle.alpha = 0.6;
+    particle.color = state.isHardMode ? '#ff2ec4' : '#00ffff';
     active.particles.push(particle);
   }
 }
@@ -393,6 +472,9 @@ function spawnLogic(now) {
     if (hard && Math.random() < 0.45) spawnObstacle();
     ambient.lastSpawn = now;
   }
+  if (Math.random() < 0.025 + state.backgroundFactor * 0.02) {
+    spawnAmbientParticles();
+  }
   if (state.score > 40) {
     const base = hard ? 0.95 : 2.1;
     const laserInterval = Math.max(0.45, base - Math.min((state.score - 40) / 500, 1.1) * 0.85);
@@ -427,9 +509,18 @@ function update(dt) {
   state.speed = 340 + Math.log1p(state.score) * 34 + difficultyBoost;
   state.backgroundFactor = Math.min(state.score / 650, 1);
   player.abilityCooldown = Math.max(characters[state.selectedCharacter].ability.baseCooldown - Math.floor(state.score / 220) * 140, 1200);
+  checkAchievements();
   spawnLogic(performance.now());
   updateEntities(dt);
   checkCollision();
+  if (state.comboTimer > 0) {
+    state.comboTimer -= dt;
+    if (state.comboTimer <= 0) {
+      state.combo = Math.max(1, state.combo - 1);
+      ui.comboBadge.textContent = `COMBO x${state.combo}`;
+    }
+  }
+  updateToast(dt);
 }
 function drawBackground() {
   const danger = state.backgroundFactor;
@@ -451,6 +542,14 @@ function drawBackground() {
   ctx.fillRect(0, ambient.groundY, virtual.width, virtual.height - ambient.groundY);
   ctx.fillStyle = 'rgba(14,238,255,0.18)';
   ctx.fillRect(0, ambient.groundY, virtual.width, 12);
+  ctx.restore();
+  const pulse = 0.2 + Math.sin(performance.now() * 0.0018) * 0.08;
+  ctx.save();
+  ctx.globalAlpha = 0.18 + pulse * 0.1;
+  ctx.fillStyle = state.isHardMode ? '#ff2ec4' : '#00ffff';
+  ctx.beginPath();
+  ctx.arc(virtual.width * 0.8, ambient.groundY * 0.55, 40 + pulse * 16, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 function drawGhosts() {
@@ -560,12 +659,18 @@ function tick(timestamp) {
   if (state.current === State.RUNNING) {
     update(dt);
   }
+  ctx.save();
+  if (state.screenShake > 0) {
+    ctx.translate((Math.random() - 0.5) * state.screenShake, (Math.random() - 0.5) * state.screenShake);
+    state.screenShake = Math.max(0, state.screenShake - dt * 36);
+  }
   drawBackground();
   drawGhosts();
   drawLasers();
   drawObstacles();
   drawParticles();
   drawPlayer();
+  ctx.restore();
   updateHud();
   requestAnimationFrame(tick);
 }

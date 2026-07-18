@@ -36,6 +36,10 @@
       .hud-panel { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,0.35); border: 1px solid rgba(14,255,255,0.28); box-shadow: 0 0 20px rgba(14,255,255,0.12); }
       .hud-panel span { display: block; color: #c8f7ff; font-size: 0.76rem; opacity: 0.95; }
       .hud-panel strong { display: block; margin-top: 4px; font-size: 1rem; color: #fff; letter-spacing: 0.04em; }
+      #floatingHud { position: absolute; top: calc(78px + env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; z-index: 10; pointer-events: none; }
+      #comboBadge { padding: 8px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 46, 196, 0.45); color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 0 16px rgba(255, 46, 196, 0.28); }
+      #achievementToast { padding: 8px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.78); border: 1px solid rgba(14, 255, 255, 0.4); color: #c8f7ff; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; box-shadow: 0 0 16px rgba(14, 255, 255, 0.22); }
+      #achievementToast.hidden { display: none; }
       #abilityPanel { position: absolute; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 10px; z-index: 10; pointer-events: auto; }
       #jumpZone { display: none; position: absolute; left: 0; top: 0; bottom: 0; width: 56%; z-index: 9; background: rgba(0, 0, 0, 0.06); pointer-events: none; border-right: 1px solid rgba(14, 255, 255, 0.08); }
       #jumpZone::after { content: 'Zıplamak için dokun'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.65); font-size: 0.9rem; letter-spacing: 0.08em; text-align: center; pointer-events: none; }
@@ -91,6 +95,10 @@
       <div id="hud">
         <div class="hud-panel"><span>SKOR</span><strong id="hudScore">0</strong></div>
         <div class="hud-panel"><span>YÜKSEK SKOR</span><strong id="hudHighScore">0</strong></div>
+      </div>
+      <div id="floatingHud">
+        <div id="comboBadge">COMBO x1</div>
+        <div id="achievementToast" class="hidden"></div>
       </div>
       <div id="abilityPanel">
         <button id="dashBtn" class="ability-btn" type="button"><span class="cooldown-mask"></span><span class="label">Dash<small>D</small></span></button>
