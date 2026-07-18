@@ -12,6 +12,7 @@ const ui = {
   backMenuBtn: document.getElementById('backMenuBtn'),
   resumeBtn: document.getElementById('resumeBtn'),
   restartBtn: document.getElementById('restartBtn'),
+  toMainMenuBtn: document.getElementById('toMainMenuBtn'),
   dashBtn: document.getElementById('dashBtn'),
   smashBtn: document.getElementById('smashBtn'),
   hudScore: document.getElementById('hudScore'),
@@ -189,9 +190,12 @@ function playSound(type) {
   osc.stop(now + 0.22);
 }
 function getPointerPosition(event) {
+  const touch = event.touches && event.touches[0];
+  const clientX = touch ? touch.clientX : event.clientX;
+  const clientY = touch ? touch.clientY : event.clientY;
   const rect = canvas.getBoundingClientRect();
-  const x = ((event.clientX - rect.left) / rect.width) * virtual.width;
-  const y = ((event.clientY - rect.top) / rect.height) * virtual.height;
+  const x = ((clientX - rect.left) / rect.width) * virtual.width;
+  const y = ((clientY - rect.top) / rect.height) * virtual.height;
   return { x, y };
 }
 function attemptJump() {
@@ -589,10 +593,12 @@ function initialize() {
   ui.backMenuBtn.addEventListener('click', () => setState(State.MENU));
   ui.resumeBtn.addEventListener('click', resumeGame);
   ui.restartBtn.addEventListener('click', startGame);
+  ui.toMainMenuBtn.addEventListener('click', () => setState(State.MENU));
   ui.dashBtn.addEventListener('click', performAbility);
   ui.smashBtn.addEventListener('click', performAbility);
   ui.charCards.forEach((card) => { card.addEventListener('click', () => setCharacter(card.dataset.char)); });
   canvas.addEventListener('pointerdown', handlePointerDown);
+  canvas.addEventListener('touchstart', (event) => { event.preventDefault(); handlePointerDown(event); }, { passive: false });
   window.addEventListener('keydown', handleKeyDown);
   window.addEventListener('blur', pauseGame);
   window.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
