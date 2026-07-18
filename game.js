@@ -311,42 +311,95 @@ function eliminateNearest(count) {
   });
 }
 function spawnObstacle() {
-  const obstacle = obtain(pools.obstacles, () => ({ active: true, type: 'SPIKE', x: 0, y: 0, width: 0, height: 0, color: '#0ef', phase: 0, fromCenter: false }));
+  const obstacle = obtain(pools.obstacles, () => ({
+    active: true,
+    type: 'SPIKE',
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    color: '#0ef',
+    phase: 0,
+    fromCenter: false,
+    spawned: 0,
+    amplitude: 0,
+    oscillating: false,
+  }));
   const floor = ambient.groundY;
   const isPortrait = virtual.height > virtual.width;
   const fromCenter = isPortrait && Math.random() < 0.62;
+  const hard = state.isHardMode;
+  const typeRoll = Math.random();
+  const obstacleType = typeRoll < 0.05 + hard * 0.08 ? 'HBAR' : typeRoll < 0.12 + hard * 0.12 ? 'HTOP' : 'VERT';
+  
   obstacle.active = true;
   obstacle.fromCenter = fromCenter;
-  obstacle.x = fromCenter
-    ? virtual.width * 0.42 + Math.random() * (virtual.width * 0.24)
-    : virtual.width + 100;
-  const scoreLevel = Math.min(Math.floor(state.score / 30), 5);
-  const hard = state.isHardMode;
-  if (scoreLevel < 2) {
-    obstacle.type = 'SPIKE';
-    obstacle.width = fromCenter ? (hard ? 68 : 54) : (hard ? 54 : 42);
-    obstacle.height = fromCenter ? (hard ? 104 : 92) : (hard ? 88 : 74);
-    obstacle.y = floor - obstacle.height;
-    obstacle.color = '#ff1e72';
-  } else if (scoreLevel < 4) {
-    obstacle.type = 'MACBOOK';
-    obstacle.width = fromCenter ? (hard ? 132 : 110) : (hard ? 112 : 92);
-    obstacle.height = fromCenter ? (hard ? 224 : 196) : (hard ? 194 : 168);
-    obstacle.y = floor - obstacle.height;
-    obstacle.color = '#8f3eff';
+  obstacle.spawned = performance.now();
+  
+  if (obstacleType === 'VERT') {
+    obstacle.x = fromCenter
+      ? virtual.width * 0.42 + Math.random() * (virtual.width * 0.24)
+      : virtual.width + 100;
+    
+    const scoreLevel = Math.min(Math.floor(state.score / 30), 5);
+    if (scoreLevel < 2) {
+      obstacle.type = 'SPIKE';
+      obstacle.width = fromCenter ? (hard ? 68 : 54) : (hard ? 54 : 42);
+      obstacle.height = fromCenter ? (hard ? 104 : 92) : (hard ? 88 : 74);
+      obstacle.y = floor - obstacle.height;
+      obstacle.color = '#ff1e72';
+    } else if (scoreLevel < 4) {
+      obstacle.type = 'MACBOOK';
+      obstacle.width = fromCenter ? (hard ? 132 : 110) : (hard ? 112 : 92);
+      obstacle.height = fromCenter ? (hard ? 224 : 196) : (hard ? 194 : 168);
+      obstacle.y = floor - obstacle.height;
+      obstacle.color = '#8f3eff';
+      if (Math.random() < 0.4) {
+        obstacle.oscillating = true;
+        obstacle.amplitude = 40 + Math.random() * 30;
+      }
+    } else {
+      obstacle.type = 'ALGO';
+      obstacle.width = fromCenter ? (hard ? 156 : 134) : (hard ? 132 : 110);
+      obstacle.height = fromCenter ? (hard ? 128 : 110) : (hard ? 104 : 88);
+      obstacle.y = floor - obstacle.height - 6;
+      obstacle.phase = Math.random() * Math.PI * 2;
+      obstacle.color = '#ffba00';
+      if (Math.random() < 0.5) {
+        obstacle.oscillating = true;
+        obstacle.amplitude = 50 + Math.random() * 40;
+      }
+    }
+    if (hard && Math.random() < 0.35) {
+      obstacle.x += 70;
+      obstacle.width += 20;
+      obstacle.height += 12;
+    }
+  } else if (obstacleType === 'HBAR') {
+    obstacle.type = 'HBAR';
+    obstacle.x = virtual.width + 80;
+    obstacle.width = hard ? 220 + Math.random() * 80 : 180 + Math.random() * 100;
+    obstacle.height = hard ? 32 : 24;
+    const rand = Math.random();
+    obstacle.y = rand < 0.33 ? floor - obstacle.height - 60 : rand < 0.66 ? (floor - obstacle.height) / 2 + Math.random() * 60 : floor - obstacle.height;
+    obstacle.color = '#00ff88';
+    obstacle.oscillating = Math.random() < 0.5;
+    if (obstacle.oscillating) {
+      obstacle.amplitude = 50 + Math.random() * 60;
+    }
   } else {
-    obstacle.type = 'ALGO';
-    obstacle.width = fromCenter ? (hard ? 156 : 134) : (hard ? 132 : 110);
-    obstacle.height = fromCenter ? (hard ? 128 : 110) : (hard ? 104 : 88);
-    obstacle.y = floor - obstacle.height - 6;
-    obstacle.phase = Math.random() * Math.PI * 2;
-    obstacle.color = '#ffba00';
+    obstacle.type = 'HTOP';
+    obstacle.x = 80 + Math.random() * (virtual.width - 160);
+    obstacle.width = hard ? 180 + Math.random() * 100 : 140 + Math.random() * 80;
+    obstacle.height = hard ? 36 : 28;
+    obstacle.y = -obstacle.height - 40 - Math.random() * 20;
+    obstacle.color = '#ffaa00';
+    obstacle.oscillating = Math.random() < 0.45;
+    if (obstacle.oscillating) {
+      obstacle.amplitude = 40 + Math.random() * 50;
+    }
   }
-  if (hard && Math.random() < 0.35) {
-    obstacle.x += 70;
-    obstacle.width += 20;
-    obstacle.height += 12;
-  }
+  
   active.obstacles.push(obstacle);
 }
 function spawnLaser() {
@@ -411,13 +464,38 @@ function updateEntities(dt) {
   const now = performance.now();
   for (let i = active.obstacles.length - 1; i >= 0; i -= 1) {
     const obstacle = active.obstacles[i];
-    obstacle.x -= shift;
-    if (obstacle.type === 'ALGO') {
-      obstacle.y = ambient.groundY - obstacle.height - 6 + Math.sin(now * 0.004 + obstacle.phase) * 22;
-    }
-    if (obstacle.x + obstacle.width < -120) {
-      release(pools.obstacles, obstacle);
-      active.obstacles.splice(i, 1);
+    const elapsedMs = now - obstacle.spawned;
+    
+    if (obstacle.type === 'HBAR' || obstacle.type === 'HTOP') {
+      if (obstacle.type === 'HBAR') {
+        obstacle.x -= shift * 1.1;
+      } else {
+        obstacle.y += shift * 0.6;
+      }
+      if (obstacle.oscillating) {
+        const osc = Math.sin(elapsedMs * 0.008) * obstacle.amplitude;
+        if (obstacle.type === 'HBAR') {
+          obstacle.y = obstacle.y + osc * dt * 0.4;
+        } else {
+          obstacle.x = obstacle.x + osc * dt * 0.3;
+        }
+      }
+      if (obstacle.x + obstacle.width < -140 || obstacle.y > virtual.height + 100) {
+        release(pools.obstacles, obstacle);
+        active.obstacles.splice(i, 1);
+      }
+    } else {
+      obstacle.x -= shift;
+      if (obstacle.type === 'ALGO') {
+        obstacle.y = ambient.groundY - obstacle.height - 6 + Math.sin(now * 0.004 + obstacle.phase) * 22;
+      } else if (obstacle.oscillating) {
+        const osc = Math.sin(elapsedMs * 0.007) * obstacle.amplitude;
+        obstacle.y = (ambient.groundY - obstacle.height) + osc;
+      }
+      if (obstacle.x + obstacle.width < -120) {
+        release(pools.obstacles, obstacle);
+        active.obstacles.splice(i, 1);
+      }
     }
   }
   for (let i = active.lasers.length - 1; i >= 0; i -= 1) {
@@ -592,18 +670,51 @@ function drawObstacles() {
     ctx.shadowColor = obstacle.color;
     ctx.shadowBlur = obstacle.fromCenter ? 32 : 18;
     ctx.fillStyle = obstacle.color;
+    
     if (obstacle.type === 'SPIKE') {
-      ctx.beginPath(); ctx.moveTo(obstacle.x, obstacle.y + obstacle.height); ctx.lineTo(obstacle.x + obstacle.width / 2, obstacle.y); ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(obstacle.x, obstacle.y + obstacle.height);
+      ctx.lineTo(obstacle.x + obstacle.width / 2, obstacle.y);
+      ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height);
+      ctx.closePath();
+      ctx.fill();
     } else if (obstacle.type === 'MACBOOK') {
       ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-      ctx.fillStyle = '#081018'; ctx.fillRect(obstacle.x + 10, obstacle.y + 10, obstacle.width - 20, obstacle.height - 24);
-      ctx.fillStyle = '#0ef'; ctx.fillRect(obstacle.x + 16, obstacle.y + 18, obstacle.width - 32, 10);
-    } else {
+      ctx.fillStyle = '#081018';
+      ctx.fillRect(obstacle.x + 10, obstacle.y + 10, obstacle.width - 20, obstacle.height - 24);
+      ctx.fillStyle = '#0ef';
+      ctx.fillRect(obstacle.x + 16, obstacle.y + 18, obstacle.width - 32, 10);
+    } else if (obstacle.type === 'ALGO') {
       ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-      ctx.fillStyle = '#04080f'; ctx.fillRect(obstacle.x + 12, obstacle.y + 18, obstacle.width - 24, 14);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.fillText('ALGO', obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2 + 8);
+      ctx.fillStyle = '#04080f';
+      ctx.fillRect(obstacle.x + 12, obstacle.y + 18, obstacle.width - 24, 14);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('ALGO', obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2 + 8);
+    } else if (obstacle.type === 'HBAR') {
+      ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = '#00ff88';
+      ctx.fillRect(obstacle.x + 8, obstacle.y + 4, obstacle.width - 16, obstacle.height - 8);
+      ctx.globalAlpha = 1;
+    } else if (obstacle.type === 'HTOP') {
+      ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#ffaa00';
+      ctx.beginPath();
+      ctx.moveTo(obstacle.x + 10, obstacle.y);
+      ctx.lineTo(obstacle.x + obstacle.width - 10, obstacle.y);
+      ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height / 2);
+      ctx.lineTo(obstacle.x + obstacle.width - 10, obstacle.y + obstacle.height);
+      ctx.lineTo(obstacle.x + 10, obstacle.y + obstacle.height);
+      ctx.lineTo(obstacle.x, obstacle.y + obstacle.height / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
-    if (obstacle.fromCenter) {
+    
+    if (obstacle.fromCenter && obstacle.type !== 'HBAR' && obstacle.type !== 'HTOP') {
       ctx.globalAlpha = 0.42;
       ctx.strokeStyle = obstacle.color;
       ctx.lineWidth = 3;
