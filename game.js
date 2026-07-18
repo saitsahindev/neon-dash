@@ -309,28 +309,33 @@ function eliminateNearest(count) {
   });
 }
 function spawnObstacle() {
-  const obstacle = obtain(pools.obstacles, () => ({ active: true, type: 'SPIKE', x: 0, y: 0, width: 0, height: 0, color: '#0ef', phase: 0 }));
+  const obstacle = obtain(pools.obstacles, () => ({ active: true, type: 'SPIKE', x: 0, y: 0, width: 0, height: 0, color: '#0ef', phase: 0, fromCenter: false }));
   const floor = ambient.groundY;
+  const mobilePortrait = getViewportMode() === 'portrait' && window.innerWidth <= 980;
+  const fromCenter = mobilePortrait && Math.random() < 0.62;
   obstacle.active = true;
-  obstacle.x = virtual.width + 100;
+  obstacle.fromCenter = fromCenter;
+  obstacle.x = fromCenter
+    ? virtual.width * 0.42 + Math.random() * (virtual.width * 0.24)
+    : virtual.width + 100;
   const scoreLevel = Math.min(Math.floor(state.score / 30), 5);
   const hard = state.isHardMode;
   if (scoreLevel < 2) {
     obstacle.type = 'SPIKE';
-    obstacle.width = hard ? 54 : 42;
-    obstacle.height = hard ? 88 : 74;
+    obstacle.width = fromCenter ? (hard ? 68 : 54) : (hard ? 54 : 42);
+    obstacle.height = fromCenter ? (hard ? 104 : 92) : (hard ? 88 : 74);
     obstacle.y = floor - obstacle.height;
     obstacle.color = '#ff1e72';
   } else if (scoreLevel < 4) {
     obstacle.type = 'MACBOOK';
-    obstacle.width = hard ? 112 : 92;
-    obstacle.height = hard ? 194 : 168;
+    obstacle.width = fromCenter ? (hard ? 132 : 110) : (hard ? 112 : 92);
+    obstacle.height = fromCenter ? (hard ? 224 : 196) : (hard ? 194 : 168);
     obstacle.y = floor - obstacle.height;
     obstacle.color = '#8f3eff';
   } else {
     obstacle.type = 'ALGO';
-    obstacle.width = hard ? 132 : 110;
-    obstacle.height = hard ? 104 : 88;
+    obstacle.width = fromCenter ? (hard ? 156 : 134) : (hard ? 132 : 110);
+    obstacle.height = fromCenter ? (hard ? 128 : 110) : (hard ? 104 : 88);
     obstacle.y = floor - obstacle.height - 6;
     obstacle.phase = Math.random() * Math.PI * 2;
     obstacle.color = '#ffba00';
@@ -583,7 +588,7 @@ function drawObstacles() {
   active.obstacles.forEach((obstacle) => {
     ctx.save();
     ctx.shadowColor = obstacle.color;
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = obstacle.fromCenter ? 32 : 18;
     ctx.fillStyle = obstacle.color;
     if (obstacle.type === 'SPIKE') {
       ctx.beginPath(); ctx.moveTo(obstacle.x, obstacle.y + obstacle.height); ctx.lineTo(obstacle.x + obstacle.width / 2, obstacle.y); ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height); ctx.closePath(); ctx.fill();
@@ -595,6 +600,12 @@ function drawObstacles() {
       ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
       ctx.fillStyle = '#04080f'; ctx.fillRect(obstacle.x + 12, obstacle.y + 18, obstacle.width - 24, 14);
       ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.fillText('ALGO', obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2 + 8);
+    }
+    if (obstacle.fromCenter) {
+      ctx.globalAlpha = 0.42;
+      ctx.strokeStyle = obstacle.color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(obstacle.x - 6, obstacle.y - 6, obstacle.width + 12, obstacle.height + 12);
     }
     ctx.restore();
   });
