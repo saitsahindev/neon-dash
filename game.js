@@ -210,14 +210,14 @@ function createSingleObstacle(x = viewportWidth) {
 
   if (score <= 20) {
     obstacle = {
-      type: 'COFFEE',
+      type: 'BASIC_SPIKE',
       x,
-      y: floorY - 58,
-      width: 58,
-      height: 58,
-      color: '#ff8c00',
+      y: floorY - 50,
+      width: 32,
+      height: 50,
+      color: '#ff0055',
     };
-    stageAlert = 'KAHVE MOLASI: Kod derleniyor...';
+    stageAlert = 'BAŞLANGIÇ SEVİYESİ';
   } else if (score <= 50) {
     const height = 190;
     const tunnelHeight = 54;
@@ -387,16 +387,13 @@ function drawObstacles() {
     context.shadowBlur = 18;
     context.lineWidth = 3;
 
-    if (obstacle.type === 'COFFEE') {
-      context.fillRect(obstacle.x + 8, obstacle.y + 14, 36, 34);
-      context.strokeRect(obstacle.x + 44, obstacle.y + 22, 12, 18);
-      context.fillRect(obstacle.x, obstacle.y + 50, obstacle.width, 7);
-      context.lineWidth = 2;
-      for (let steam = 0; steam < 3; steam += 1) {
-        context.beginPath();
-        context.arc(obstacle.x + 17 + steam * 11, obstacle.y + 10, 5, Math.PI, 0);
-        context.stroke();
-      }
+    if (obstacle.type === 'BASIC_SPIKE') {
+      context.beginPath();
+      context.moveTo(obstacle.x, obstacle.y + obstacle.height);
+      context.lineTo(obstacle.x + obstacle.width / 2, obstacle.y);
+      context.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height);
+      context.closePath();
+      context.fill();
     } else if (obstacle.type === 'MACBOOK') {
       const tunnelBottom = obstacle.tunnelY + obstacle.tunnelHeight;
       context.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.tunnelY - obstacle.y);
@@ -538,6 +535,14 @@ function drawFakeError(timestamp) {
 }
 
 function getObstaclePoints(obstacle) {
+  if (obstacle.type === 'BASIC_SPIKE') {
+    return [
+      { x: obstacle.x, y: obstacle.y + obstacle.height },
+      { x: obstacle.x + obstacle.width / 2, y: obstacle.y },
+      { x: obstacle.x + obstacle.width, y: obstacle.y + obstacle.height },
+    ];
+  }
+
   return [
     { x: obstacle.x, y: obstacle.y },
     { x: obstacle.x + obstacle.width, y: obstacle.y },
