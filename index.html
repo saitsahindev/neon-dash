@@ -7,9 +7,9 @@
     <title>Neon Dash</title>
     <style>
       * { box-sizing: border-box; }
-      html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; touch-action: none; overscroll-behavior: none; -webkit-user-select: none; }
-      body { display: flex; justify-content: center; align-items: center; }
-      #gameRoot { position: relative; width: 100vw; min-height: 100vh; overflow: hidden; background: #04060c; padding-bottom: env(safe-area-inset-bottom); }
+      html, body { width: 100%; min-height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; touch-action: none; overscroll-behavior: none; -webkit-user-select: none; }
+      body { display: flex; justify-content: center; align-items: center; min-height: 100vh; height: 100vh; }
+      #gameRoot { position: relative; width: 100vw; min-height: 100vh; height: 100vh; max-height: 100dvh; overflow: hidden; background: #04060c; padding-bottom: env(safe-area-inset-bottom); }
       canvas { position: absolute; inset: 0; margin: auto; touch-action: none; max-width: 100vw; max-height: 100vh; width: 100%; height: 100%; }
       .menu { position: absolute; inset: 0; z-index: 12; display: grid; place-content: center; gap: 18px; padding: 24px; background: rgba(0, 0, 0, 0.92); text-align: center; }
       .menu.hidden { display: none; }
@@ -78,7 +78,6 @@
       <div id="hud">
         <div class="hud-panel"><span>SKOR</span><strong id="hudScore">0</strong></div>
         <div class="hud-panel"><span>YÜKSEK SKOR</span><strong id="hudHighScore">0</strong></div>
-        <div class="hud-panel"><span>KARAKTER</span><strong id="hudCharacter">NEON RUNNER</strong></div>
       </div>
       <div id="abilityPanel">
         <button id="dashBtn" class="ability-btn" type="button"><span class="cooldown-mask"></span><span class="label">Dash<small>D</small></span></button>

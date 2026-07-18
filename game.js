@@ -19,7 +19,6 @@ const ui = {
   smashBtn: document.getElementById('smashBtn'),
   hudScore: document.getElementById('hudScore'),
   hudHighScore: document.getElementById('hudHighScore'),
-  hudCharacter: document.getElementById('hudCharacter'),
   gameOverScore: document.getElementById('gameOverScore'),
   gameOverHighScore: document.getElementById('gameOverHighScore'),
   charCards: document.querySelectorAll('.char-card'),
@@ -521,7 +520,6 @@ function drawParticles() {
 function updateHud() {
   ui.hudScore.textContent = String(Math.max(0, Math.floor(state.score)));
   ui.hudHighScore.textContent = String(state.highScore);
-  ui.hudCharacter.textContent = characters[state.selectedCharacter].name;
   const now = performance.now();
   const cooldown = Math.max(0, player.abilityCooldown - (now - player.abilityLastUsed));
   const ready = Math.max(0, Math.min(1, 1 - cooldown / player.abilityCooldown));
