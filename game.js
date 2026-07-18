@@ -71,11 +71,10 @@ const state = {
   highScore: Number.parseInt(localStorage.getItem('highScore') || '0', 10) || 0,
   speed: 360,
   lastTime: 0,
-  spawnAt: 0,
-  laserAt: 0,
   selectedCharacter: 'runner',
   backgroundFactor: 0,
   isSpeedMode: false,
+  isHardMode: false,
 };
 const ambient = { groundY: virtual.height - 128, lastSpawn: 0, lastLaser: 0 };
 const audioContext = window.AudioContext ? new window.AudioContext() : null;
@@ -136,7 +135,8 @@ function startGame() {
   state.spawnAt = 0;
   state.laserAt = 0;
   state.backgroundFactor = 0;
-  state.isSpeedMode = false;
+  ambient.lastSpawn = performance.now();
+  ambient.lastLaser = performance.now();
   setCharacter(state.selectedCharacter);
   resetPools();
   player.x = 180;
@@ -312,24 +312,26 @@ function updateEntities(dt) {
   const baseSpeed = state.speed * characters[state.selectedCharacter].speedScale + speedBoost;
   const shift = baseSpeed * dt;
   const now = performance.now();
-  active.obstacles.forEach((obstacle, index) => {
+  for (let i = active.obstacles.length - 1; i >= 0; i -= 1) {
+    const obstacle = active.obstacles[i];
     obstacle.x -= shift;
     if (obstacle.type === 'ALGO') {
       obstacle.y = ambient.groundY - obstacle.height - 6 + Math.sin(now * 0.004 + obstacle.phase) * 22;
     }
     if (obstacle.x + obstacle.width < -120) {
       release(pools.obstacles, obstacle);
-      active.obstacles.splice(index, 1);
+      active.obstacles.splice(i, 1);
     }
-  });
-  active.lasers.forEach((laser, index) => {
+  }
+  for (let i = active.lasers.length - 1; i >= 0; i -= 1) {
+    const laser = active.lasers[i];
     laser.phase += dt * 2;
     laser.length = 130 + Math.sin(laser.phase) * 36;
     if (laser.x + laser.width < -140) {
       release(pools.lasers, laser);
-      active.lasers.splice(index, 1);
+      active.lasers.splice(i, 1);
     }
-  });
+  }
   if (!player.grounded) {
     player.vy += player.gravity * dt;
   }
@@ -349,15 +351,17 @@ function updateEntities(dt) {
       spawnGhost();
     }
   }
-  active.ghosts.forEach((ghost, index) => {
+  for (let i = active.ghosts.length - 1; i >= 0; i -= 1) {
+    const ghost = active.ghosts[i];
     ghost.life -= dt;
     ghost.alpha = Math.max(0, ghost.life / 0.22);
     if (ghost.life <= 0) {
       release(pools.ghosts, ghost);
-      active.ghosts.splice(index, 1);
+      active.ghosts.splice(i, 1);
     }
-  });
-  active.particles.forEach((particle, index) => {
+  }
+  for (let i = active.particles.length - 1; i >= 0; i -= 1) {
+    const particle = active.particles[i];
     particle.life -= dt;
     particle.x += particle.dx * dt;
     particle.y += particle.dy * dt;
@@ -365,9 +369,9 @@ function updateEntities(dt) {
     particle.alpha = Math.max(0, particle.life / 0.8);
     if (particle.life <= 0) {
       release(pools.particles, particle);
-      active.particles.splice(index, 1);
+      active.particles.splice(i, 1);
     }
-  });
+  }
 }
 function spawnLogic(now) {
   const interval = 1.45 - Math.min(state.score / 1200, 0.75);
@@ -376,7 +380,8 @@ function spawnLogic(now) {
     ambient.lastSpawn = now;
   }
   if (state.score > 50) {
-    const laserInterval = 2.1 - Math.min((state.score - 50) / 600, 1) * 0.9;
+    const base = state.isHardMode ? 1.35 : 2.1;
+    const laserInterval = base - Math.min((state.score - 50) / 600, 1) * 0.95;
     if (now - ambient.lastLaser >= laserInterval * 1000) {
       spawnLaser();
       ambient.lastLaser = now;
@@ -400,9 +405,11 @@ function checkCollision() {
   }
 }
 function update(dt) {
-  state.score += dt * (state.isSpeedMode ? 20 : 14);
+  const scoreRate = state.isHardMode ? 20 : state.isSpeedMode ? 18 : 14;
+  const difficultyBoost = state.isHardMode ? 52 : state.isSpeedMode ? 130 : 0;
+  state.score += dt * scoreRate;
   state.score = Math.min(state.score, 999999);
-  state.speed = 340 + Math.log1p(state.score) * 34 + (state.isSpeedMode ? 130 : 0);
+  state.speed = 340 + Math.log1p(state.score) * 34 + difficultyBoost;
   state.backgroundFactor = Math.min(state.score / 650, 1);
   player.abilityCooldown = Math.max(characters[state.selectedCharacter].ability.baseCooldown - Math.floor(state.score / 250) * 120, 1400);
   spawnLogic(performance.now());
@@ -518,11 +525,12 @@ function updateHud() {
   ui.hudCharacter.textContent = characters[state.selectedCharacter].name;
   const now = performance.now();
   const cooldown = Math.max(0, player.abilityCooldown - (now - player.abilityLastUsed));
-  const ready = 1 - cooldown / player.abilityCooldown;
-  ui.dashBtn.style.setProperty('--ready', `${state.selectedCharacter === 'runner' ? ready * 100 : 0}%`);
-  ui.smashBtn.style.setProperty('--ready', `${state.selectedCharacter === 'techno_samurai' ? ready * 100 : 0}%`);
-  ui.dashBtn.disabled = state.current !== State.RUNNING || state.selectedCharacter !== 'runner';
-  ui.smashBtn.disabled = state.current !== State.RUNNING || state.selectedCharacter !== 'techno_samurai';
+  const ready = Math.max(0, Math.min(1, 1 - cooldown / player.abilityCooldown));
+  ui.dashBtn.style.setProperty('--ready', `${state.selectedCharacter === 'runner' ? ready * 100 : 0}`);
+  ui.smashBtn.style.setProperty('--ready', `${state.selectedCharacter === 'techno_samurai' ? ready * 100 : 0}`);
+  const abilityEnabled = state.current === State.RUNNING && cooldown <= 0;
+  ui.dashBtn.disabled = !abilityEnabled || state.selectedCharacter !== 'runner';
+  ui.smashBtn.disabled = !abilityEnabled || state.selectedCharacter !== 'techno_samurai';
 }
 function tick(timestamp) {
   if (!state.lastTime) state.lastTime = timestamp;
@@ -543,8 +551,10 @@ function tick(timestamp) {
 function handlePointerDown(event) {
   if (state.current !== State.RUNNING) return;
   const point = getPointerPosition(event);
-  if (point.x <= virtual.width * 0.5) {
+  if (point.x <= virtual.width * 0.48) {
     attemptJump();
+  } else {
+    performAbility();
   }
 }
 function handleKeyDown(event) {
@@ -554,9 +564,17 @@ function handleKeyDown(event) {
     if (state.current === State.RUNNING) attemptJump();
     else if (state.current === State.PAUSED) resumeGame();
     else if (state.current === State.MENU || state.current === State.GAMEOVER) startGame();
+    return;
   }
-  if (event.code === 'KeyD') performAbility();
-  if (event.code === 'KeyF') performAbility();
+  if (event.code === 'Escape') {
+    event.preventDefault();
+    if (state.current === State.RUNNING) pauseGame();
+    else if (state.current === State.PAUSED) resumeGame();
+    return;
+  }
+  if ((event.code === 'KeyD' && state.selectedCharacter === 'runner') || (event.code === 'KeyF' && state.selectedCharacter === 'techno_samurai')) {
+    performAbility();
+  }
   if (event.code === 'KeyP') { event.preventDefault(); state.current === State.RUNNING ? pauseGame() : resumeGame(); }
 }
 function initialize() {
@@ -564,9 +582,9 @@ function initialize() {
   setCharacter(state.selectedCharacter);
   setState(State.MENU);
   loadImages();
-  ui.startBtn.addEventListener('click', () => { state.isSpeedMode = false; startGame(); });
-  ui.speedModeBtn.addEventListener('click', () => { state.isSpeedMode = true; startGame(); });
-  ui.hardModeBtn.addEventListener('click', () => { state.isSpeedMode = true; startGame(); });
+  ui.startBtn.addEventListener('click', () => { state.isSpeedMode = false; state.isHardMode = false; startGame(); });
+  ui.speedModeBtn.addEventListener('click', () => { state.isSpeedMode = true; state.isHardMode = false; startGame(); });
+  ui.hardModeBtn.addEventListener('click', () => { state.isSpeedMode = false; state.isHardMode = true; startGame(); });
   ui.charSelectBtn.addEventListener('click', () => setState(State.SELECT));
   ui.backMenuBtn.addEventListener('click', () => setState(State.MENU));
   ui.resumeBtn.addEventListener('click', resumeGame);
@@ -576,6 +594,8 @@ function initialize() {
   ui.charCards.forEach((card) => { card.addEventListener('click', () => setCharacter(card.dataset.char)); });
   canvas.addEventListener('pointerdown', handlePointerDown);
   window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('blur', pauseGame);
+  window.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
   window.addEventListener('resize', updateSize);
   requestAnimationFrame(tick);
 }
