@@ -250,26 +250,32 @@ function spawnObstacle() {
   const floor = ambient.groundY;
   obstacle.active = true;
   obstacle.x = virtual.width + 100;
-  const scoreLevel = Math.min(Math.floor(state.score / 40), 4);
+  const scoreLevel = Math.min(Math.floor(state.score / 30), 5);
+  const hard = state.isHardMode;
   if (scoreLevel < 2) {
     obstacle.type = 'SPIKE';
-    obstacle.width = 42;
-    obstacle.height = 74;
+    obstacle.width = hard ? 54 : 42;
+    obstacle.height = hard ? 88 : 74;
     obstacle.y = floor - obstacle.height;
     obstacle.color = '#ff1e72';
   } else if (scoreLevel < 4) {
     obstacle.type = 'MACBOOK';
-    obstacle.width = 92;
-    obstacle.height = 168;
+    obstacle.width = hard ? 112 : 92;
+    obstacle.height = hard ? 194 : 168;
     obstacle.y = floor - obstacle.height;
     obstacle.color = '#8f3eff';
   } else {
     obstacle.type = 'ALGO';
-    obstacle.width = 110;
-    obstacle.height = 88;
+    obstacle.width = hard ? 132 : 110;
+    obstacle.height = hard ? 104 : 88;
     obstacle.y = floor - obstacle.height - 6;
     obstacle.phase = Math.random() * Math.PI * 2;
     obstacle.color = '#ffba00';
+  }
+  if (hard && Math.random() < 0.35) {
+    obstacle.x += 70;
+    obstacle.width += 20;
+    obstacle.height += 12;
   }
   active.obstacles.push(obstacle);
 }
@@ -277,8 +283,8 @@ function spawnLaser() {
   const laser = obtain(pools.lasers, () => ({ active: true, type: 'LASER', x: 0, y: 0, width: 0, length: 0, phase: 0, color: '#ff0055' }));
   laser.active = true;
   laser.x = 80 + Math.random() * (virtual.width - 260);
-  laser.width = 80 + Math.random() * 120;
-  laser.length = 130 + Math.random() * 64;
+  laser.width = state.isHardMode ? 104 + Math.random() * 80 : 80 + Math.random() * 120;
+  laser.length = state.isHardMode ? 170 + Math.random() * 90 : 130 + Math.random() * 64;
   laser.y = 0;
   laser.phase = Math.random() * Math.PI * 2;
   active.lasers.push(laser);
@@ -379,16 +385,20 @@ function updateEntities(dt) {
   }
 }
 function spawnLogic(now) {
-  const interval = 1.45 - Math.min(state.score / 1200, 0.75);
+  const hard = state.isHardMode;
+  const scoreFactor = Math.min(state.score / 900, 1.2);
+  const interval = hard ? Math.max(0.7, 1.35 - scoreFactor * 0.55) : Math.max(0.95, 1.45 - Math.min(state.score / 1200, 0.75));
   if (now - ambient.lastSpawn >= interval * 1000) {
     spawnObstacle();
+    if (hard && Math.random() < 0.45) spawnObstacle();
     ambient.lastSpawn = now;
   }
-  if (state.score > 50) {
-    const base = state.isHardMode ? 1.35 : 2.1;
-    const laserInterval = base - Math.min((state.score - 50) / 600, 1) * 0.95;
+  if (state.score > 40) {
+    const base = hard ? 0.95 : 2.1;
+    const laserInterval = Math.max(0.45, base - Math.min((state.score - 40) / 500, 1.1) * 0.85);
     if (now - ambient.lastLaser >= laserInterval * 1000) {
       spawnLaser();
+      if (hard && Math.random() < 0.55) spawnLaser();
       ambient.lastLaser = now;
     }
   }
@@ -410,13 +420,13 @@ function checkCollision() {
   }
 }
 function update(dt) {
-  const scoreRate = state.isHardMode ? 20 : state.isSpeedMode ? 18 : 14;
-  const difficultyBoost = state.isHardMode ? 52 : state.isSpeedMode ? 130 : 0;
+  const scoreRate = state.isHardMode ? 24 : state.isSpeedMode ? 18 : 14;
+  const difficultyBoost = state.isHardMode ? 140 : state.isSpeedMode ? 130 : 0;
   state.score += dt * scoreRate;
   state.score = Math.min(state.score, 999999);
   state.speed = 340 + Math.log1p(state.score) * 34 + difficultyBoost;
   state.backgroundFactor = Math.min(state.score / 650, 1);
-  player.abilityCooldown = Math.max(characters[state.selectedCharacter].ability.baseCooldown - Math.floor(state.score / 250) * 120, 1400);
+  player.abilityCooldown = Math.max(characters[state.selectedCharacter].ability.baseCooldown - Math.floor(state.score / 220) * 140, 1200);
   spawnLogic(performance.now());
   updateEntities(dt);
   checkCollision();
