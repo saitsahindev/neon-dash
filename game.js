@@ -673,7 +673,7 @@ function polygonsCollide(firstPolygon, secondPolygon) {
 
 function getCollidingObstacle() {
   const playerPoints = getPlayerPoints();
-  return obstacles.find((obstacle) => {
+  const bottomObstacle = obstacles.find((obstacle) => {
     if (!polygonsCollide(playerPoints, getObstaclePoints(obstacle))) {
       return false;
     }
@@ -686,6 +686,20 @@ function getCollidingObstacle() {
       && playerBottom <= obstacle.tunnelY + obstacle.tunnelHeight;
     return !isInsideTunnel;
   });
+
+  if (bottomObstacle) return bottomObstacle;
+
+  const ceilingLaser = {
+    x: 0,
+    y: 0,
+    width: viewportWidth,
+    height: getCeilingHeight(),
+  };
+  if (polygonsCollide(playerPoints, getObstaclePoints(ceilingLaser))) {
+    return ceilingLaser;
+  }
+
+  return topObstacles.find((obstacle) => polygonsCollide(playerPoints, getObstaclePoints(obstacle)));
 }
 
 function getCollisionPoint(obstacle) {
@@ -839,6 +853,7 @@ function gameLoop(timestamp) {
 
     update();
     updateObstacles();
+    updateTopObstacles();
 
     const collidedObstacle = getCollidingObstacle();
     if (collidedObstacle) {
@@ -853,6 +868,7 @@ function gameLoop(timestamp) {
   }
   drawPlayer();
   drawObstacles();
+  drawTopObstacles();
   drawParticles();
   drawScore();
   drawFlipWarning(timestamp);
