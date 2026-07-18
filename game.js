@@ -371,17 +371,17 @@ function spawnParticles(x, y, color) {
   }
 }
 function spawnAmbientParticles() {
-  const count = 2 + Math.floor(Math.random() * 3);
+  const count = 3 + Math.floor(Math.random() * 4);
   for (let i = 0; i < count; i += 1) {
     const particle = obtain(pools.particles, () => ({ active: true, x: 0, y: 0, dx: 0, dy: 0, life: 0, alpha: 1, size: 0, color: '#0ef' }));
     particle.active = true;
-    particle.x = virtual.width + 20;
-    particle.y = 80 + Math.random() * (virtual.height - 180);
-    particle.dx = -(80 + Math.random() * 140);
-    particle.dy = (Math.random() - 0.5) * 70;
-    particle.size = 2 + Math.random() * 3;
-    particle.life = 1.2 + Math.random() * 0.8;
-    particle.alpha = 0.6;
+    particle.x = 40 + Math.random() * (virtual.width - 80);
+    particle.y = 40 + Math.random() * (virtual.height - 140);
+    particle.dx = (Math.random() - 0.5) * 140;
+    particle.dy = (Math.random() - 0.5) * 140;
+    particle.size = 2 + Math.random() * 4;
+    particle.life = 0.9 + Math.random() * 0.8;
+    particle.alpha = 0.75;
     particle.color = state.isHardMode ? '#ff2ec4' : '#00ffff';
     active.particles.push(particle);
   }
@@ -466,22 +466,30 @@ function updateEntities(dt) {
 function spawnLogic(now) {
   const hard = state.isHardMode;
   const scoreFactor = Math.min(state.score / 900, 1.2);
-  const interval = hard ? Math.max(0.7, 1.35 - scoreFactor * 0.55) : Math.max(0.95, 1.45 - Math.min(state.score / 1200, 0.75));
+  const timeSinceLastSpawn = (now - ambient.lastSpawn) / 1000;
+  const emptyPressure = Math.min(0.42, Math.max(0, timeSinceLastSpawn - 1.3) / 2.4);
+  const interval = hard
+    ? Math.max(0.55, 1.08 - scoreFactor * 0.47 - emptyPressure * 0.12)
+    : Math.max(0.78, 1.2 - Math.min(state.score / 1000, 0.65) - emptyPressure * 0.1);
   if (now - ambient.lastSpawn >= interval * 1000) {
     spawnObstacle();
-    if (hard && Math.random() < 0.45) spawnObstacle();
+    if (hard && Math.random() < 0.52 + emptyPressure * 0.24) spawnObstacle();
     ambient.lastSpawn = now;
+  } else if (hard && Math.random() < 0.012 + emptyPressure * 0.03) {
+    spawnObstacle();
   }
-  if (Math.random() < 0.025 + state.backgroundFactor * 0.02) {
+  if (Math.random() < 0.09 + state.backgroundFactor * 0.05 + emptyPressure * 0.04) {
     spawnAmbientParticles();
   }
   if (state.score > 40) {
-    const base = hard ? 0.95 : 2.1;
-    const laserInterval = Math.max(0.45, base - Math.min((state.score - 40) / 500, 1.1) * 0.85);
+    const base = hard ? 0.82 : 1.8;
+    const laserInterval = Math.max(0.35, base - Math.min((state.score - 40) / 500, 1.1) * 0.78);
     if (now - ambient.lastLaser >= laserInterval * 1000) {
       spawnLaser();
-      if (hard && Math.random() < 0.55) spawnLaser();
+      if (hard && Math.random() < 0.6 + emptyPressure * 0.15) spawnLaser();
       ambient.lastLaser = now;
+    } else if (Math.random() < 0.008 + emptyPressure * 0.02) {
+      spawnLaser();
     }
   }
 }
@@ -545,11 +553,21 @@ function drawBackground() {
   ctx.restore();
   const pulse = 0.2 + Math.sin(performance.now() * 0.0018) * 0.08;
   ctx.save();
-  ctx.globalAlpha = 0.18 + pulse * 0.1;
+  ctx.globalAlpha = 0.18 + pulse * 0.12;
   ctx.fillStyle = state.isHardMode ? '#ff2ec4' : '#00ffff';
   ctx.beginPath();
   ctx.arc(virtual.width * 0.8, ambient.groundY * 0.55, 40 + pulse * 16, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = 0.14 + pulse * 0.08;
+  ctx.strokeStyle = state.isHardMode ? '#ff2ec4' : '#00ffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(virtual.width * 0.12, ambient.groundY * 0.65);
+  ctx.quadraticCurveTo(virtual.width * 0.35, ambient.groundY * 0.5 - pulse * 60, virtual.width * 0.58, ambient.groundY * 0.55 + pulse * 40);
+  ctx.quadraticCurveTo(virtual.width * 0.74, ambient.groundY * 0.6 + pulse * 20, virtual.width * 0.92, ambient.groundY * 0.7);
+  ctx.stroke();
   ctx.restore();
 }
 function drawGhosts() {
