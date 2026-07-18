@@ -311,8 +311,8 @@ function eliminateNearest(count) {
 function spawnObstacle() {
   const obstacle = obtain(pools.obstacles, () => ({ active: true, type: 'SPIKE', x: 0, y: 0, width: 0, height: 0, color: '#0ef', phase: 0, fromCenter: false }));
   const floor = ambient.groundY;
-  const mobilePortrait = getViewportMode() === 'portrait' && window.innerWidth <= 980;
-  const fromCenter = mobilePortrait && Math.random() < 0.62;
+  const isPortrait = virtual.height > virtual.width;
+  const fromCenter = isPortrait && Math.random() < 0.62;
   obstacle.active = true;
   obstacle.fromCenter = fromCenter;
   obstacle.x = fromCenter
