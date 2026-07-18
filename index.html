@@ -51,15 +51,21 @@
       #gameOverMenu .score-panel { margin: 0 auto; max-width: 400px; padding: 18px; border-radius: 20px; background: rgba(3, 8, 18, 0.92); border: 1px solid rgba(255, 46, 196, 0.24); }
       #gameOverScore, #gameOverHighScore { font-size: 1.05rem; margin: 12px 0 0; color: #fff; }
       #touchHint { position: absolute; left: 18px; bottom: 18px; padding: 10px 14px; border-radius: 16px; background: rgba(0,0,0,0.55); border: 1px solid rgba(14,255,255,0.28); font-size: 0.78rem; letter-spacing: 0.06em; color: #c8f7ff; z-index: 10; pointer-events: none; max-width: 260px; }
-      @media (max-width: 900px) {
-        #jumpZone { display: block; }
-        #touchHint { display: block; }
-        #abilityPanel { right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); left: auto; transform: none; width: min(150px, 38vw); padding: 0; grid-template-columns: 1fr; }
-        .ability-btn { min-width: 0; min-height: 60px; font-size: 0.9rem; }
+      @media (max-width: 900px) and (orientation: portrait) {
+        #jumpZone { display: block; width: 100%; border-right: none; border-bottom: 1px solid rgba(14, 255, 255, 0.08); }
+        #touchHint { display: block; left: 8px; right: 8px; bottom: calc(90px + env(safe-area-inset-bottom)); max-width: none; }
+        #abilityPanel { left: 50%; right: auto; bottom: calc(10px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(280px, 86vw); padding: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .ability-btn { min-width: 0; min-height: 64px; font-size: 0.9rem; }
         #hud { top: calc(8px + env(safe-area-inset-top)); left: 8px; right: 8px; gap: 8px; }
         .hud-panel { padding: 8px 10px; }
         .hud-panel span { font-size: 0.68rem; }
         .hud-panel strong { font-size: 0.92rem; }
+      }
+      @media (max-width: 900px) and (orientation: landscape) {
+        #jumpZone { display: block; }
+        #touchHint { display: block; }
+        #abilityPanel { right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); left: auto; transform: none; width: min(150px, 38vw); padding: 0; grid-template-columns: 1fr; }
+        .ability-btn { min-width: 0; min-height: 60px; font-size: 0.9rem; }
       }
       @media (max-width: 660px) {
         .menu { padding: 16px; }

@@ -80,6 +80,9 @@ const state = {
 };
 const ambient = { groundY: virtual.height - 128, lastSpawn: 0, lastLaser: 0 };
 const audioContext = window.AudioContext ? new window.AudioContext() : null;
+function getViewportMode() {
+  return window.innerWidth <= window.innerHeight ? 'portrait' : 'landscape';
+}
 function loadImages() {
   Object.values(characters).forEach((character) => {
     const image = new Image();
@@ -114,6 +117,10 @@ function clamp(value, min, max) {
 }
 function updateSize() {
   const ratio = window.devicePixelRatio || 1;
+  const mode = getViewportMode();
+  virtual.width = mode === 'portrait' ? 720 : 1080;
+  virtual.height = mode === 'portrait' ? 1280 : 720;
+  ambient.groundY = virtual.height - 128;
   const scale = Math.min(window.innerWidth / virtual.width, window.innerHeight / virtual.height);
   virtual.scale = scale;
   const cssWidth = Math.floor(virtual.width * scale);
